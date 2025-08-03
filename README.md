@@ -37,20 +37,60 @@ npm install
 
 ### 3. 配置环境变量
 
-创建 `.env.local` 文件并添加以下配置：
+复制示例环境变量文件并配置：
+
+```bash
+cp .env.example .env.local
+```
+
+然后编辑 `.env.local` 文件，填入你的真实配置：
 
 ```env
-UPSTASH_REDIS_REST_URL=your_upstash_redis_rest_url
-UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_rest_token
+# Upstash Redis 配置
+UPSTASH_REDIS_REST_URL=https://your-database-name.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_very_long_token_string
+
+# 应用配置
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
+> **重要提示**：
+> - 确保 URL 以 `https://` 开头
+> - Token 是一个很长的字符串，请完整复制
+> - 不要在这些值周围添加引号
+> - `.env.local` 文件不会被提交到 Git（已在 .gitignore 中）
+
 ### 4. 获取 Upstash Redis 配置
 
+#### 步骤 1：创建 Upstash 账户
 1. 访问 [Upstash Console](https://console.upstash.com/)
-2. 创建账号并登录
-3. 创建新的 Redis 数据库
-4. 复制 REST URL 和 REST Token 到环境变量
+2. 使用 GitHub/Google 账号注册或创建新账户
+3. 验证邮箱地址
+
+#### 步骤 2：创建 Redis 数据库
+1. 在 Upstash 控制台中，点击 "Create Database"
+2. 配置数据库：
+   - **Name**: `coffee-ordering-system`（或你喜欢的名字）
+   - **Region**: 选择离你最近的区域（如 `us-east-1` 或 `eu-west-1`）
+   - **Type**: 选择 "Pay as you go"（免费额度足够小项目使用）
+3. 点击 "Create"
+
+#### 步骤 3：获取连接信息
+1. 数据库创建后，点击数据库名称进入详情页
+2. 找到 "REST API" 部分
+3. 复制以下信息：
+   - **UPSTASH_REDIS_REST_URL**: 类似 `https://us1-settled-cat-12345.upstash.io`
+   - **UPSTASH_REDIS_REST_TOKEN**: 一个很长的字符串
+
+#### 步骤 4：测试连接
+将配置添加到 `.env.local` 后，运行开发服务器：
+```bash
+npm run dev
+```
+如果在浏览器控制台看到 Redis 相关错误，请检查：
+- URL 和 Token 是否正确复制
+- 是否有多余的空格
+- Upstash 数据库是否处于活跃状态
 
 ### 5. 运行开发服务器
 
@@ -58,33 +98,168 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 npm run dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000) 查看应用。
+应用将在 [http://localhost:3000](http://localhost:3000) 启动。
+
+#### 本地开发调试
+
+如果遇到问题，请检查以下内容：
+
+1. **Redis 连接状态**：
+   - 打开浏览器开发者工具（F12）
+   - 查看控制台是否有 Redis 相关错误
+   - 成功连接时会显示：`Using Upstash Redis` 或 `Using Memory Store`
+
+2. **环境变量检查**：
+   ```bash
+   # 在项目根目录运行，检查环境变量是否正确加载
+   node -e "console.log('Redis URL:', process.env.UPSTASH_REDIS_REST_URL)"
+   ```
+
+3. **依赖问题**：
+   ```bash
+   # 清理并重新安装依赖
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+4. **端口冲突**：
+   - 如果 3000 端口被占用，Next.js 会自动使用 3001
+   - 或手动指定端口：`npm run dev -- -p 3001`
 
 ## 🌐 部署到 Vercel
 
-### 1. 推送代码到 GitHub
+### 方法一：通过 Vercel Dashboard（推荐）
+
+#### 1. 推送代码到 GitHub
 
 ```bash
 git add .
-git commit -m "Initial commit"
+git commit -m "Ready for deployment"
 git push origin main
 ```
 
-### 2. 连接 Vercel
+#### 2. 在 Vercel 中导入项目
 
-1. 访问 [Vercel](https://vercel.com)
-2. 使用 GitHub 账号登录
-3. 导入你的项目仓库
+1. 访问 [Vercel Dashboard](https://vercel.com/dashboard)
+2. 点击 "New Project"
+3. 选择 "Import Git Repository"
+4. 选择你的 GitHub 仓库 `coffe-ordering-system`
+5. 点击 "Import"
 
-### 3. 配置环境变量
+#### 3. 配置环境变量
 
-在 Vercel 项目设置中添加环境变量：
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
+在项目导入后的配置页面，或者在项目的 Settings > Environment Variables 中添加：
 
-### 4. 部署
+| Name | Value | Environment |
+|------|-------|-------------|
+| `UPSTASH_REDIS_REST_URL` | `https://your-redis-url.upstash.io` | Production, Preview, Development |
+| `UPSTASH_REDIS_REST_TOKEN` | `your-redis-token` | Production, Preview, Development |
+| `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` | Production |
+| `NEXT_PUBLIC_APP_URL` | `https://your-app-preview.vercel.app` | Preview |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Development |
 
-Vercel 会自动部署你的应用。
+#### 4. 部署
+
+配置完成后，Vercel 会自动开始部署。
+
+### 方法二：通过 Vercel CLI
+
+#### 1. 安装 Vercel CLI
+
+```bash
+npm i -g vercel
+```
+
+#### 2. 登录 Vercel
+
+```bash
+vercel login
+```
+
+#### 3. 设置环境变量
+
+```bash
+# 生产环境
+vercel env add UPSTASH_REDIS_REST_URL production
+vercel env add UPSTASH_REDIS_REST_TOKEN production
+
+# 预览环境
+vercel env add UPSTASH_REDIS_REST_URL preview
+vercel env add UPSTASH_REDIS_REST_TOKEN preview
+
+# 开发环境
+vercel env add UPSTASH_REDIS_REST_URL development
+vercel env add UPSTASH_REDIS_REST_TOKEN development
+```
+
+#### 4. 部署
+
+```bash
+vercel --prod
+```
+
+### 常见部署问题排查
+
+#### 问题1：环境变量未生效
+**症状**：应用启动但无法连接到 Redis，或显示使用内存存储
+**解决方案**：
+1. 检查 Vercel Dashboard 中环境变量是否正确设置
+2. 确保环境变量名称完全匹配：`UPSTASH_REDIS_REST_URL` 和 `UPSTASH_REDIS_REST_TOKEN`
+3. 环境变量值不要包含引号或多余空格
+4. 重新部署项目以应用环境变量更改：
+   ```bash
+   # 在 Vercel 中触发重新部署
+   git commit --allow-empty -m "Trigger redeploy"
+   git push origin main
+   ```
+
+#### 问题2：Redis 连接错误
+**症状**：控制台显示 Redis 连接失败
+**解决方案**：
+1. 验证 Upstash Redis URL 格式：应该是 `https://xxxxx.upstash.io`
+2. 检查 Token 是否完整复制（通常很长，包含字母和数字）
+3. 确保 Upstash Redis 数据库状态为 "Active"
+4. 测试 Redis 连接：
+   ```bash
+   curl -H "Authorization: Bearer YOUR_TOKEN" \
+        https://your-redis-url.upstash.io/ping
+   # 应该返回：{"result":"PONG"}
+   ```
+
+#### 问题3：构建失败
+**症状**：Vercel 构建过程中出现错误
+**解决方案**：
+1. 检查构建日志中的具体错误信息
+2. 常见问题及解决：
+   - **TypeScript 错误**：已配置忽略，但可检查类型定义
+   - **依赖缺失**：确保 `package.json` 中包含所有必要依赖
+   - **内存不足**：Vercel 免费版有内存限制，优化代码或升级计划
+
+#### 问题4：应用运行但功能异常
+**症状**：页面加载但订单功能不工作
+**解决方案**：
+1. 检查浏览器控制台的 JavaScript 错误
+2. 验证 API 路由是否正常工作：
+   - 访问 `https://your-app.vercel.app/api/orders`
+   - 应该返回空数组 `[]` 而不是错误
+3. 检查网络面板中的 API 请求状态
+
+## 🔧 故障排除与监控
+
+### 生产环境调试
+
+1. **查看 Vercel 部署日志**：
+   - 访问 Vercel Dashboard > 项目 > Functions
+   - 查看实时日志和错误信息
+
+2. **监控 Redis 使用情况**：
+   - 在 Upstash Console 中查看数据库指标
+   - 监控连接数和存储使用量
+
+3. **性能优化建议**：
+   - 启用 Vercel Analytics
+   - 使用 Redis 过期时间管理存储
+   - 定期清理不必要的历史数据
 
 ## 📡 API 接口
 
