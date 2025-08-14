@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { OrderService } from '@/lib/order-service'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET() {
   try {
     console.log('GET /api/orders - 开始获取订单')
     const orders = await OrderService.getAllOrders()
     console.log('GET /api/orders - 获取到的订单:', orders)
-    return NextResponse.json({ orders })
+  return NextResponse.json({ orders }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('Error fetching orders:', error)
     return NextResponse.json(
@@ -31,7 +34,7 @@ export async function POST(request: NextRequest) {
 
   const order = await OrderService.createOrder(tableNumber, items, customerName)
   console.log('POST /api/orders - created order:', order)
-    return NextResponse.json({ order }, { status: 201 })
+  return NextResponse.json({ order }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('Error creating order:', error)
     return NextResponse.json(

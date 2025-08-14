@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { redis, REDIS_KEYS } from '@/lib/redis'
 import { DEFAULT_MENU, MenuItem } from '@/lib/menu'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const MENU_KEY = `${REDIS_KEYS.statistics}:menu`
 const ADMIN_TOKEN = process.env.MENU_ADMIN_TOKEN || 'abcd1234'
 
@@ -17,7 +20,7 @@ export async function GET() {
     } else {
       menu = raw as MenuItem[]
     }
-    return NextResponse.json({ menu })
+  return NextResponse.json({ menu }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to load menu' }, { status: 500 })
   }
@@ -35,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid menu' }, { status: 400 })
     }
     await redis.hset(MENU_KEY, { current: JSON.stringify(menu) })
-    return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to save menu' }, { status: 500 })
   }
