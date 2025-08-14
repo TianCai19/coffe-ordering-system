@@ -20,9 +20,12 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
   const isOrderReady = items.every(item => item.status === 'ready')
   const isUrgentOrder = items.some(item => item.isUrgent && item.status === 'preparing')
+  // Name-only (priority) orders should always render as urgent/red
+  const isNameOnlyPriority = !!order.customerName && typeof order.tableNumber !== 'number'
+  const isUrgentCard = isUrgentOrder || isNameOnlyPriority
   
-  const cardBg = isOrderReady ? 'bg-green-900/50' : (isUrgentOrder ? 'bg-red-900/60' : 'bg-gray-800')
-  const borderColor = isOrderReady ? 'border-green-500' : (isUrgentOrder ? 'border-red-500' : 'border-gray-600')
+  const cardBg = isOrderReady ? 'bg-green-900/50' : (isUrgentCard ? 'bg-red-900/60' : 'bg-gray-800')
+  const borderColor = isOrderReady ? 'border-green-500' : (isUrgentCard ? 'border-red-500' : 'border-gray-600')
 
   const groupedItems = useMemo<Array<{
     name: string
@@ -72,7 +75,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
       <p className="text-xs text-gray-400">First item at: {new Date(timestamp).toLocaleTimeString()}</p>
         </div>
         <div className="flex items-center gap-2">
-          {isUrgentOrder && (
+          {isUrgentCard && (
             <div className="flex items-center gap-1 text-red-400 bg-red-900/50 px-2 py-1 rounded-full text-sm">
               <ZapIcon className="w-4 h-4" />
         <span>Urgent</span>
