@@ -10,7 +10,8 @@ export interface CoffeeItem {
 
 export interface Order {
   id: string
-  tableNumber: number
+  tableNumber?: number
+  customerName?: string
   items: CoffeeItem[]
   timestamp: number
   status: 'pending' | 'completed'
@@ -22,7 +23,8 @@ export interface OrderStats {
 }
 
 export interface CreateOrderRequest {
-  tableNumber: number
+  tableNumber?: number
+  customerName?: string
   items: Array<{
     name: string
     temperature: 'hot' | 'iced'

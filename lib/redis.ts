@@ -31,8 +31,14 @@ class MemoryStore {
   }
 }
 
-// 使用内存存储作为临时解决方案
-const memoryStore = new MemoryStore()
+// 使用全局单例的内存存储，避免在开发热更新/路由重新编译时丢失数据
+declare global {
+  // eslint-disable-next-line no-var
+  var __COFFEE_APP_MEMORY_STORE__: MemoryStore | undefined
+}
+
+const memoryStore: MemoryStore =
+  globalThis.__COFFEE_APP_MEMORY_STORE__ || (globalThis.__COFFEE_APP_MEMORY_STORE__ = new MemoryStore())
 
 export const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
   ? new Redis({

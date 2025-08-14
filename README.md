@@ -2,6 +2,8 @@
 
 一个现代化的咖啡店订单管理系统，使用 Next.js + Upstash Redis + Vercel 构建。
 
+> 开发者日志请见: [CHANGELOG.md](./CHANGELOG.md)
+
 ## ✨ 功能特点
 
 - 🎯 **实时订单管理** - 支持下单、修改、删除订单

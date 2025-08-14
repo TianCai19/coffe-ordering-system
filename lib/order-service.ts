@@ -40,18 +40,19 @@ export class OrderService {
   }
 
   // 创建新订单
-  static async createOrder(tableNumber: number, items: Array<{
-    name: string
-    temperature: 'hot' | 'iced'
-    isUrgent: boolean
-  }>): Promise<Order> {
-    console.log('OrderService.createOrder - 开始创建订单:', { tableNumber, items })
+  static async createOrder(
+    tableNumber: number | undefined,
+    items: Array<{ name: string; temperature: 'hot' | 'iced'; isUrgent: boolean }>,
+    customerName?: string
+  ): Promise<Order> {
+    console.log('OrderService.createOrder - 开始创建订单:', { tableNumber, customerName, items })
     const orderId = uuidv4()
     const timestamp = Date.now()
     
     const order: Order = {
       id: orderId,
       tableNumber,
+      customerName,
       timestamp,
       status: 'pending',
       items: items.map((item, index) => ({
@@ -176,14 +177,16 @@ export class OrderService {
         order.items.forEach(item => {
           if (item.status === 'preparing') {
             pendingItemsInOrder++
-            const key = `${item.name} (${item.temperature === 'iced' ? '冰' : '热'})`
+            const key = `${item.name} (${item.temperature === 'iced' ? 'Iced' : 'Hot'})`
             coffeeCounts[key] = (coffeeCounts[key] || 0) + 1
           }
         })
         
         if (pendingItemsInOrder > 0) {
-          tableCounts[order.tableNumber.toString()] = 
-            (tableCounts[order.tableNumber.toString()] || 0) + pendingItemsInOrder
+          if (typeof order.tableNumber === 'number') {
+            tableCounts[order.tableNumber.toString()] = 
+              (tableCounts[order.tableNumber.toString()] || 0) + pendingItemsInOrder
+          }
         }
       })
 

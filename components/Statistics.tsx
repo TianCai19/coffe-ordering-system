@@ -17,37 +17,37 @@ export const Statistics: React.FC<StatisticsProps> = ({ stats }) => {
     <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
       <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
         <PieChartIcon className="w-6 h-6"/> 
-        待制作统计 ({totalPendingItems} 项)
+  Pending Statistics ({totalPendingItems} items)
       </h3>
       <div className="space-y-4">
         <div>
-          <h4 className="font-bold text-gray-300 mb-1">按种类:</h4>
+    <h4 className="font-bold text-gray-300 mb-1">By category:</h4>
           {sortedCoffeeCounts.length > 0 ? (
             <ul className="text-sm text-gray-400 space-y-1">
               {sortedCoffeeCounts.map(([name, count]) => (
                 <li key={name} className="flex justify-between">
-                  <span>{name}:</span> 
-                  <span>{count} 杯</span>
+      <span>{name}:</span> 
+      <span>{count}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-500">无</p>
+      <p className="text-sm text-gray-500">None</p>
           )}
         </div>
         <div>
-          <h4 className="font-bold text-gray-300 mb-1">按桌号:</h4>
+    <h4 className="font-bold text-gray-300 mb-1">By table:</h4>
           {sortedTableCounts.length > 0 ? (
             <ul className="text-sm text-gray-400 space-y-1">
               {sortedTableCounts.map(([table, count]) => (
                 <li key={table} className="flex justify-between">
-                  <span>桌号 {table}:</span> 
-                  <span>{count} 项</span>
+      <span>Table {table}:</span> 
+      <span>{count} items</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-500">无</p>
+      <p className="text-sm text-gray-500">None</p>
           )}
         </div>
       </div>

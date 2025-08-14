@@ -18,19 +18,19 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('POST /api/orders - 开始创建订单')
-    const { tableNumber, items } = await request.json()
-    console.log('POST /api/orders - 请求数据:', { tableNumber, items })
+  console.log('POST /api/orders - creating order')
+  const { tableNumber, customerName, items } = await request.json()
+  console.log('POST /api/orders - payload:', { tableNumber, customerName, items })
     
-    if (!tableNumber || !items || !Array.isArray(items)) {
+  if ((!tableNumber && !customerName) || !items || !Array.isArray(items)) {
       return NextResponse.json(
         { error: 'Invalid request data' },
         { status: 400 }
       )
     }
 
-    const order = await OrderService.createOrder(tableNumber, items)
-    console.log('POST /api/orders - 创建的订单:', order)
+  const order = await OrderService.createOrder(tableNumber, items, customerName)
+  console.log('POST /api/orders - created order:', order)
     return NextResponse.json({ order }, { status: 201 })
   } catch (error) {
     console.error('Error creating order:', error)

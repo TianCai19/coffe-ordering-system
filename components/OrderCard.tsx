@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Order } from '@/types'
+import { Order, CoffeeItem } from '@/types'
 import { CheckCircleIcon, ZapIcon, EditIcon, TrashIcon } from './Icons'
 
 interface OrderCardProps {
@@ -24,7 +24,16 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   const cardBg = isOrderReady ? 'bg-green-900/50' : (isUrgentOrder ? 'bg-red-900/60' : 'bg-gray-800')
   const borderColor = isOrderReady ? 'border-green-500' : (isUrgentOrder ? 'border-red-500' : 'border-gray-600')
 
-  const groupedItems = useMemo(() => {
+  const groupedItems = useMemo<Array<{
+    name: string
+    temperature: 'hot' | 'iced'
+    details: Array<{
+      status: 'preparing' | 'ready'
+      orderId: string
+      originalIndex: number
+      isUrgent: boolean
+    }>
+  }>>(() => {
     const groups: Record<string, {
       name: string
       temperature: 'hot' | 'iced'
@@ -36,7 +45,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
       }>
     }> = {}
     
-    items.forEach((item) => {
+    items.forEach((item: CoffeeItem) => {
       const key = `${item.name}-${item.temperature}`
       if (!groups[key]) {
         groups[key] = {
@@ -59,26 +68,26 @@ export const OrderCard: React.FC<OrderCardProps> = ({
     <div className={`p-4 rounded-lg border ${borderColor} ${cardBg} transition-all duration-300 shadow-lg flex flex-col`}>
       <div className="flex justify-between items-start">
         <div>
-          <h3 className="font-bold text-xl text-white">桌号: {tableNumber}</h3>
-          <p className="text-xs text-gray-400">首单时间: {new Date(timestamp).toLocaleTimeString()}</p>
+      <h3 className="font-bold text-xl text-white">{order.customerName ? `Customer: ${order.customerName}` : `Table: ${tableNumber}`}</h3>
+      <p className="text-xs text-gray-400">First item at: {new Date(timestamp).toLocaleTimeString()}</p>
         </div>
         <div className="flex items-center gap-2">
           {isUrgentOrder && (
             <div className="flex items-center gap-1 text-red-400 bg-red-900/50 px-2 py-1 rounded-full text-sm">
               <ZapIcon className="w-4 h-4" />
-              <span>加急</span>
+        <span>Urgent</span>
             </div>
           )}
           {isOrderReady && (
             <div className="flex items-center gap-1 text-green-400 bg-green-900/50 px-2 py-1 rounded-full text-sm">
               <CheckCircleIcon className="w-4 h-4" />
-              <span>已完成</span>
+        <span>Completed</span>
             </div>
           )}
         </div>
       </div>
       <ul className="mt-3 space-y-2 flex-grow">
-        {groupedItems.map((group) => {
+        {groupedItems.map((group: { name: string; temperature: 'hot' | 'iced'; details: Array<{ status: 'preparing' | 'ready'; orderId: string; originalIndex: number; isUrgent: boolean }> }) => {
           const allInGroupReady = group.details.every(d => d.status === 'ready')
           return (
             <li key={`${group.name}-${group.temperature}`} className="flex justify-between items-center">
@@ -86,14 +95,14 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                 {group.details.some(d => d.isUrgent) && <ZapIcon className="w-4 h-4 text-red-400" />}
                 {group.name}
                 <span className={`text-xs px-1.5 py-0.5 rounded-full ${group.temperature === 'iced' ? 'bg-blue-800 text-blue-300' : 'bg-orange-800 text-orange-300'}`}>
-                  {group.temperature === 'iced' ? '冰' : '热'}
+          {group.temperature === 'iced' ? 'Iced' : 'Hot'}
                 </span>
                 <span className="text-gray-400 text-sm">x{group.details.length}</span>
               </span>
               
-              {!isOrderReady && onUpdateItemStatus && (
+              {onUpdateItemStatus && (
                 <div className="flex flex-nowrap gap-1.5">
-                  {group.details.map((detail, index) => (
+                  {group.details.map((detail, index: number) => (
                     <button 
                       key={index} 
                       onClick={() => onUpdateItemStatus(detail.orderId, detail.originalIndex)}

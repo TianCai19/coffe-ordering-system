@@ -1,35 +1,26 @@
-import React, { useState } from 'react'
-import { Order } from '@/types'
-import { ZapIcon } from './Icons'
+"use client"
 
-const COFFEE_TYPES = [
-  '拿铁 (Latte)', 
-  '浓缩咖啡 (Espresso)', 
-  '卡布奇诺 (Cappuccino)', 
-  '美式咖啡 (Americano)', 
-  '摩卡 (Mocha)', 
-  '玛奇朵 (Macchiato)'
-]
+import React, { useEffect, useMemo, useState } from 'react'
+import { Order, CreateOrderRequest, UpdateOrderRequest } from '@/types'
+import { ZapIcon } from './Icons'
+import { DEFAULT_MENU, MenuItem } from '@/lib/menu'
+import { ApiService } from '@/lib/api-service'
 
 interface OrderModalProps {
   tableNumber: number | null
   onClose: () => void
-  onPlaceOrder: (order: { tableNumber: number; items: any[] }) => void
+  onPlaceOrder: (order: { tableNumber?: number; customerName?: string; items: CreateOrderRequest['items'] }) => void
   existingOrder?: Order | null
-  onUpdateOrder?: (order: Order) => void
+  onUpdateOrder?: (payload: { orderId: string; items: UpdateOrderRequest['items'] }) => void
 }
 
-export const OrderModal: React.FC<OrderModalProps> = ({ 
-  tableNumber, 
-  onClose, 
-  onPlaceOrder, 
-  existingOrder, 
-  onUpdateOrder 
-}) => {
+export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) => {
+  const { tableNumber, onClose, onPlaceOrder, existingOrder, onUpdateOrder } = props
   const isEditMode = !!existingOrder
+  const [customerName, setCustomerName] = useState<string>(existingOrder?.customerName || '')
   
-  const [selectedCoffees, setSelectedCoffees] = useState(() => {
-    if (!isEditMode) return {}
+  const [selectedCoffees, setSelectedCoffees] = useState<Record<string, { hot: number; iced: number }>>(() => {
+    if (!isEditMode || !existingOrder) return {}
     const initial: Record<string, { hot: number; iced: number }> = {}
     existingOrder.items.forEach(item => {
       if (!initial[item.name]) {
@@ -39,9 +30,20 @@ export const OrderModal: React.FC<OrderModalProps> = ({
     })
     return initial
   })
+  const [menu, setMenu] = useState<MenuItem[]>(DEFAULT_MENU)
+  const menuMap = useMemo(() => Object.fromEntries(menu.map(m => [m.name, m])), [menu])
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const m = await ApiService.getMenu()
+        if (Array.isArray(m) && m.length > 0) setMenu(m)
+      } catch {}
+    })()
+  }, [])
   
-  const [urgentTypes, setUrgentTypes] = useState(() => {
-    if (!isEditMode) return new Set<string>()
+  const [urgentTypes, setUrgentTypes] = useState<Set<string>>(() => {
+    if (!isEditMode || !existingOrder) return new Set<string>()
     const urgent = new Set<string>()
     existingOrder.items.forEach(item => {
       if (item.isUrgent) {
@@ -52,8 +54,10 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   })
 
   const handleQuantityChange = (coffee: string, temperature: 'hot' | 'iced', delta: number) => {
-    setSelectedCoffees(prev => {
-      const newCoffees = JSON.parse(JSON.stringify(prev))
+    const allow = temperature === 'hot' ? menuMap[coffee]?.hot : menuMap[coffee]?.iced
+    if (!allow) return
+    setSelectedCoffees((prev: Record<string, { hot: number; iced: number }>) => {
+      const newCoffees = JSON.parse(JSON.stringify(prev)) as Record<string, { hot: number; iced: number }>
       if (!newCoffees[coffee]) {
         newCoffees[coffee] = { hot: 0, iced: 0 }
       }
@@ -61,8 +65,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       
       if (newCoffees[coffee].hot === 0 && newCoffees[coffee].iced === 0) {
         delete newCoffees[coffee]
-        setUrgentTypes(prevUrgent => {
-          const newUrgent = new Set(prevUrgent)
+        setUrgentTypes((prevUrgent: Set<string>) => {
+          const newUrgent = new Set<string>(prevUrgent)
           newUrgent.delete(coffee)
           return newUrgent
         })
@@ -73,49 +77,67 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
   const toggleUrgent = (coffee: string) => {
     if (!selectedCoffees[coffee] || (selectedCoffees[coffee].hot === 0 && selectedCoffees[coffee].iced === 0)) return
-    setUrgentTypes(prev => {
-      const newUrgent = new Set(prev)
+    setUrgentTypes((prev: Set<string>) => {
+      const newUrgent = new Set<string>(prev)
       newUrgent.has(coffee) ? newUrgent.delete(coffee) : newUrgent.add(coffee)
       return newUrgent
     })
   }
 
   const handleSubmit = () => {
-    const items = Object.entries(selectedCoffees).flatMap(([name, temps]) => {
+    const items = (Object.entries(selectedCoffees) as Array<[string, { hot: number; iced: number }]>).reduce<Array<{ name: string; isUrgent: boolean; temperature: 'hot' | 'iced' }>>((acc, [name, temps]) => {
       const isUrgent = urgentTypes.has(name)
-      const hotItems = Array(temps.hot).fill({ name, isUrgent, temperature: 'hot' })
-      const icedItems = Array(temps.iced).fill({ name, isUrgent, temperature: 'iced' })
-      return [...hotItems, ...icedItems]
-    })
+      for (let i = 0; i < temps.hot; i++) acc.push({ name, isUrgent, temperature: 'hot' })
+      for (let i = 0; i < temps.iced; i++) acc.push({ name, isUrgent, temperature: 'iced' })
+      return acc
+    }, [])
 
     if (items.length === 0) {
-      alert('请至少选择一种咖啡！')
+      alert('Please select at least one drink!')
       return
     }
 
-    if (isEditMode && onUpdateOrder) {
-      onUpdateOrder({
-        ...existingOrder,
-        items: items.map(item => ({ ...item, status: 'preparing' as const })),
-      })
+    if (isEditMode && onUpdateOrder && existingOrder) {
+      const updateItems: UpdateOrderRequest['items'] = items.map(i => ({ name: i.name, temperature: i.temperature, isUrgent: i.isUrgent }))
+      onUpdateOrder({ orderId: existingOrder.id, items: updateItems })
     } else {
-      onPlaceOrder({ tableNumber: tableNumber!, items })
+      // If no table selected, require a customer name for priority orders
+      if (!tableNumber && !customerName.trim()) {
+        alert('Please enter a customer name for priority orders.')
+        return
+      }
+      onPlaceOrder({ tableNumber: tableNumber ?? undefined, customerName: customerName.trim() || undefined, items })
     }
-    // 移除 onClose() - 让父组件来控制关闭
   }
   
-  const totalItems = Object.values(selectedCoffees).reduce((sum, temps) => sum + temps.hot + temps.iced, 0)
-  const currentTableNumber = isEditMode ? existingOrder.tableNumber : tableNumber
+  const totalItems = (Object.values(selectedCoffees) as Array<{ hot: number; iced: number }>).reduce((sum, temps) => sum + temps.hot + temps.iced, 0)
+  const currentTableNumber = isEditMode ? existingOrder?.tableNumber ?? null : tableNumber
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
       <div className="bg-gray-800 rounded-xl p-8 w-full max-w-2xl m-4 shadow-2xl border border-gray-700">
         <h2 className="text-3xl font-bold text-white mb-6">
-          {isEditMode ? `修改桌号 ${currentTableNumber} 的订单` : `桌号 ${currentTableNumber} - 点餐`}
+          {isEditMode 
+            ? `Edit order for ${existingOrder?.customerName ? `Customer ${existingOrder?.customerName}` : `Table ${currentTableNumber}`}`
+            : currentTableNumber 
+              ? `Table ${currentTableNumber} - Order`
+              : 'Priority Order (Name Only)'}
         </h2>
+        {!currentTableNumber && (
+          <div className="mb-4">
+            <label className="block text-sm text-gray-300 mb-1">Customer Name</label>
+            <input 
+              value={customerName} 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerName(e.target.value)}
+              placeholder="Enter name"
+              className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        )}
         <div className="space-y-3 mb-6 max-h-[60vh] overflow-y-auto pr-2">
-          {COFFEE_TYPES.map(coffee => {
-            const quantities = selectedCoffees[coffee] || { hot: 0, iced: 0 }
+          {menu.map(coffeeItem => {
+            const coffee = coffeeItem.name
+            const quantities = (selectedCoffees as Record<string, { hot: number; iced: number }>)[coffee] || { hot: 0, iced: 0 }
             const isUrgent = urgentTypes.has(coffee)
             const hasSelection = quantities.hot > 0 || quantities.iced > 0
             return (
@@ -132,19 +154,21 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-4">
                   {/* Hot Controls */}
-                  <div className="flex items-center justify-between bg-gray-800/50 p-2 rounded-md">
-                    <span className="font-semibold text-orange-300">热</span>
+                  <div className="flex items-center justify-between bg-gray-800/50 p-2 rounded-md opacity-100">
+                    <span className="font-semibold text-orange-300">Hot</span>
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'hot', -1)} 
                         className="w-7 h-7 rounded-full bg-gray-600 hover:bg-red-600 text-white font-bold text-lg transition-colors"
+                        disabled={!coffeeItem.hot}
                       >
                         -
                       </button>
-                      <span className="w-8 text-center text-xl font-bold">{quantities.hot}</span>
+                      <span className={`w-8 text-center text-xl font-bold ${!coffeeItem.hot ? 'opacity-50' : ''}`}>{quantities.hot}</span>
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'hot', 1)} 
-                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-green-600 text-white font-bold text-lg transition-colors"
+                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-green-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
+                        disabled={!coffeeItem.hot}
                       >
                         +
                       </button>
@@ -152,18 +176,20 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   </div>
                   {/* Iced Controls */}
                   <div className="flex items-center justify-between bg-gray-800/50 p-2 rounded-md">
-                    <span className="font-semibold text-blue-300">冰</span>
+                    <span className="font-semibold text-blue-300">Iced</span>
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'iced', -1)} 
-                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-red-600 text-white font-bold text-lg transition-colors"
+                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-red-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
+                        disabled={!coffeeItem.iced}
                       >
                         -
                       </button>
-                      <span className="w-8 text-center text-xl font-bold">{quantities.iced}</span>
+                      <span className={`w-8 text-center text-xl font-bold ${!coffeeItem.iced ? 'opacity-50' : ''}`}>{quantities.iced}</span>
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'iced', 1)} 
-                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-green-600 text-white font-bold text-lg transition-colors"
+                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-green-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
+                        disabled={!coffeeItem.iced}
                       >
                         +
                       </button>
@@ -179,14 +205,14 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             onClick={onClose} 
             className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
           >
-            取消
+            Cancel
           </button>
           <button 
             onClick={handleSubmit} 
             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:bg-gray-500" 
             disabled={totalItems === 0}
           >
-            {isEditMode ? '更新订单' : `确认下单 (${totalItems} 杯)`}
+            {isEditMode ? 'Update Order' : `Place Order (${totalItems})`}
           </button>
         </div>
       </div>

@@ -38,24 +38,24 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
   }
 
   const exportArchive = (archive: ArchiveEntry) => {
-    let content = `咖啡订单存档报告\n`
-    content += `存档日期: ${archive.date}\n`
-    content += `统计周期: ${archive.weekStartDate} 至 ${archive.weekEndDate}\n`
-    content += `总订单数: ${archive.totalOrders} 单\n`
-    content += `总咖啡数: ${archive.totalItems} 杯\n`
+    let content = `Coffee Orders Archive Report\n`
+    content += `Archived at: ${archive.date}\n`
+    content += `Period: ${archive.weekStartDate} - ${archive.weekEndDate}\n`
+    content += `Total orders: ${archive.totalOrders}\n`
+    content += `Total drinks: ${archive.totalItems}\n`
     content += "====================================\n\n"
 
-    content += "### 咖啡类型统计 ###\n"
+    content += "### Coffee Types ###\n"
     const sortedCoffeeTypes = Object.entries(archive.coffeeCounts).sort((a, b) => b[1] - a[1])
     sortedCoffeeTypes.forEach(([name, count]) => {
-      content += `- ${name}: ${count} 杯\n`
+      content += `- ${name}: ${count}\n`
     })
     content += "\n====================================\n\n"
 
-    content += "### 桌号统计 ###\n"
+    content += "### By Table ###\n"
     const sortedTables = Object.entries(archive.tableCounts).sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
     sortedTables.forEach(([tableNumber, count]) => {
-      content += `- 桌号 ${tableNumber}: ${count} 杯\n`
+      content += `- Table ${tableNumber}: ${count}\n`
     })
 
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
@@ -73,7 +73,7 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
         <div className="bg-gray-800 rounded-xl p-8 w-full max-w-4xl m-4 shadow-2xl border border-gray-700">
           <div className="text-center">
             <CoffeeCupIcon className="w-16 h-16 mx-auto mb-4 animate-pulse" />
-            <p className="text-xl text-white">加载历史记录中...</p>
+            <p className="text-xl text-white">Loading history...</p>
           </div>
         </div>
       </div>
@@ -86,7 +86,7 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-white flex items-center gap-3">
             <CoffeeCupIcon className="w-8 h-8"/>
-            历史统计记录
+            History Archives
           </h2>
           <button 
             onClick={onClose}
@@ -98,8 +98,8 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
 
         {archives.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-400 text-xl">暂无历史记录</p>
-            <p className="text-gray-500 mt-2">完成第一次结算后，历史记录将显示在这里</p>
+            <p className="text-gray-400 text-xl">No history yet</p>
+            <p className="text-gray-500 mt-2">After the first archive, history will appear here.</p>
           </div>
         ) : (
           <div className="flex-1 overflow-hidden">
@@ -117,12 +117,12 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
                           <h3 className="text-xl font-semibold text-white mb-2">
                             {archive.weekStartDate} 至 {archive.weekEndDate}
                           </h3>
-                          <p className="text-gray-300 mb-1">存档时间: {archive.date}</p>
+                          <p className="text-gray-300 mb-1">Archived: {archive.date}</p>
                           <div className="flex gap-6 text-sm text-gray-400">
-                            <span>订单: {archive.totalOrders} 单</span>
-                            <span>咖啡: {archive.totalItems} 杯</span>
-                            <span>咖啡类型: {Object.keys(archive.coffeeCounts).length} 种</span>
-                            <span>活跃桌号: {Object.keys(archive.tableCounts).length} 个</span>
+                            <span>Orders: {archive.totalOrders}</span>
+                            <span>Drinks: {archive.totalItems}</span>
+                            <span>Types: {Object.keys(archive.coffeeCounts).length}</span>
+                            <span>Active tables: {Object.keys(archive.tableCounts).length}</span>
                           </div>
                         </div>
                         <button
@@ -131,7 +131,7 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
                             exportArchive(archive)
                           }}
                           className="p-2 rounded-md bg-green-600 hover:bg-green-700 text-white transition-colors"
-                          title="导出报告"
+                          title="Export report"
                         >
                           <DownloadIcon className="w-5 h-5"/>
                         </button>
@@ -147,7 +147,7 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
                     onClick={() => setSelectedArchive(null)}
                     className="text-blue-400 hover:text-blue-300 transition-colors"
                   >
-                    ← 返回列表
+                    ← Back to list
                   </button>
                 </div>
                 
@@ -155,43 +155,43 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
                   <div className="flex justify-between items-start mb-6">
                     <div>
                       <h3 className="text-2xl font-bold text-white mb-2">
-                        {selectedArchive.weekStartDate} 至 {selectedArchive.weekEndDate}
+                        {selectedArchive.weekStartDate} - {selectedArchive.weekEndDate}
                       </h3>
-                      <p className="text-gray-300">存档时间: {selectedArchive.date}</p>
+                      <p className="text-gray-300">Archived: {selectedArchive.date}</p>
                     </div>
                     <button
                       onClick={() => exportArchive(selectedArchive)}
                       className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
                     >
                       <DownloadIcon className="w-5 h-5"/>
-                      导出报告
+                      Export report
                     </button>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-8">
                     <div>
-                      <h4 className="text-lg font-semibold text-white mb-4">咖啡类型统计</h4>
+                      <h4 className="text-lg font-semibold text-white mb-4">Coffee types</h4>
                       <div className="space-y-2">
                         {Object.entries(selectedArchive.coffeeCounts)
                           .sort((a, b) => b[1] - a[1])
                           .map(([name, count]) => (
                           <div key={name} className="flex justify-between text-gray-300">
                             <span>{name}</span>
-                            <span className="font-semibold">{count} 杯</span>
+                            <span className="font-semibold">{count}</span>
                           </div>
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <h4 className="text-lg font-semibold text-white mb-4">桌号统计</h4>
+                      <h4 className="text-lg font-semibold text-white mb-4">By table</h4>
                       <div className="space-y-2">
                         {Object.entries(selectedArchive.tableCounts)
                           .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
                           .map(([tableNumber, count]) => (
                           <div key={tableNumber} className="flex justify-between text-gray-300">
-                            <span>桌号 {tableNumber}</span>
-                            <span className="font-semibold">{count} 杯</span>
+                            <span>Table {tableNumber}</span>
+                            <span className="font-semibold">{count}</span>
                           </div>
                         ))}
                       </div>
@@ -202,19 +202,19 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                       <div className="bg-gray-800 rounded-lg p-4">
                         <div className="text-2xl font-bold text-blue-400">{selectedArchive.totalOrders}</div>
-                        <div className="text-gray-400">总订单数</div>
+                        <div className="text-gray-400">Total orders</div>
                       </div>
                       <div className="bg-gray-800 rounded-lg p-4">
                         <div className="text-2xl font-bold text-green-400">{selectedArchive.totalItems}</div>
-                        <div className="text-gray-400">总咖啡数</div>
+                        <div className="text-gray-400">Total drinks</div>
                       </div>
                       <div className="bg-gray-800 rounded-lg p-4">
                         <div className="text-2xl font-bold text-purple-400">{Object.keys(selectedArchive.coffeeCounts).length}</div>
-                        <div className="text-gray-400">咖啡类型</div>
+                        <div className="text-gray-400">Types</div>
                       </div>
                       <div className="bg-gray-800 rounded-lg p-4">
                         <div className="text-2xl font-bold text-orange-400">{Object.keys(selectedArchive.tableCounts).length}</div>
-                        <div className="text-gray-400">活跃桌号</div>
+                        <div className="text-gray-400">Active tables</div>
                       </div>
                     </div>
                   </div>

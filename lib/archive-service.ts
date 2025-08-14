@@ -19,7 +19,7 @@ export class ArchiveService {
   static async getAllArchives(): Promise<ArchiveEntry[]> {
     try {
       console.log('ArchiveService.getAllArchives - 开始获取存档')
-      const archives = await redis.hgetall(REDIS_KEYS.archives)
+  const archives = await redis.hgetall(REDIS_KEYS.archives)
       console.log('ArchiveService.getAllArchives - Redis返回的存档数据:', archives)
       
       if (!archives || typeof archives !== 'object') {
@@ -27,12 +27,12 @@ export class ArchiveService {
         return []
       }
       
-      const result = Object.values(archives)
+  const result = Object.values(archives)
         .filter(archive => archive !== null && archive !== undefined)
         .map(archive => {
           try {
             // 如果是字符串，解析它；如果已经是对象，直接返回
-            if (typeof archive === 'string') {
+    if (typeof archive === 'string') {
               return JSON.parse(archive)
             } else {
               return archive as ArchiveEntry
@@ -59,7 +59,7 @@ export class ArchiveService {
       console.log('ArchiveService.archiveCurrentData - 开始存档当前数据')
       
       // 获取当前所有订单
-      const orders = await OrderService.getAllOrders()
+  const orders = await OrderService.getAllOrders()
       console.log('ArchiveService.archiveCurrentData - 获取到的订单:', orders)
       
       if (orders.length === 0) {
@@ -68,14 +68,17 @@ export class ArchiveService {
 
       // 计算统计信息
       const coffeeCounts: Record<string, number> = {}
-      const tableCounts: Record<number, number> = {}
+      const tableCounts: Record<string, number> = {}
       let totalItems = 0
 
       orders.forEach(order => {
         order.items.forEach(item => {
-          const key = `${item.name} (${item.temperature === 'iced' ? '冰' : '热'})`
+          const key = `${item.name} (${item.temperature === 'iced' ? 'Iced' : 'Hot'})`
           coffeeCounts[key] = (coffeeCounts[key] || 0) + 1
-          tableCounts[order.tableNumber] = (tableCounts[order.tableNumber] || 0) + 1
+          if (typeof order.tableNumber === 'number') {
+            const t = String(order.tableNumber)
+            tableCounts[t] = (tableCounts[t] || 0) + 1
+          }
           totalItems++
         })
       })
@@ -93,7 +96,7 @@ export class ArchiveService {
         totalOrders: orders.length,
         totalItems,
         coffeeCounts,
-        tableCounts,
+  tableCounts: Object.fromEntries(Object.entries(tableCounts).sort((a, b) => Number(a[0]) - Number(b[0]))),
         weekStartDate: startOfWeek.toLocaleDateString('zh-CN'),
         weekEndDate: endOfWeek.toLocaleDateString('zh-CN'),
         originalData: orders

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { Order, OrderStats } from '@/types'
+import { Order, OrderStats, UpdateOrderRequest, CreateOrderRequest, CoffeeItem } from '@/types'
 import { ApiService } from '@/lib/api-service'
 import { OrderCard } from '@/components/OrderCard'
 import { OrderModal } from '@/components/OrderModal'
@@ -10,29 +10,30 @@ import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
 import { LogsModal } from '@/components/LogsModal'
 import { CoffeeCupIcon, DownloadIcon, HistoryIcon, ArchiveIcon } from '@/components/Icons'
 
-const TABLE_COUNT = 20
+const TABLE_COUNT = 24
 
 export default function HomePage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [statistics, setStatistics] = useState<OrderStats>({ coffeeCounts: {}, tableCounts: {} })
   const [selectedTable, setSelectedTable] = useState<number | null>(null)
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [showOrderModal, setShowOrderModal] = useState(false)
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'table' | 'time'>('table')
   const [loading, setLoading] = useState(true)
   const [showLogsModal, setShowLogsModal] = useState(false)
   const [archiving, setArchiving] = useState(false)
 
-  // 加载数据
+  // Load data
   const loadData = async () => {
     try {
-      console.log('开始加载数据...')
+      console.log('Start loading data...')
       const [ordersData, statsData] = await Promise.all([
         ApiService.getAllOrders(),
         ApiService.getStatistics()
       ])
-      console.log('获取到的订单数据:', ordersData)
-      console.log('获取到的统计数据:', statsData)
+      console.log('Orders loaded:', ordersData)
+      console.log('Stats loaded:', statsData)
       setOrders(ordersData)
       setStatistics(statsData)
     } catch (error) {
@@ -45,46 +46,41 @@ export default function HomePage() {
   useEffect(() => {
     loadData()
     
-    // 设置定时刷新
-    const interval = setInterval(loadData, 10000) // 每10秒刷新一次
+    // Auto refresh every 10s
+    const interval = setInterval(loadData, 10000)
     return () => clearInterval(interval)
   }, [])
 
-  // 处理下单
-  const handlePlaceOrder = async ({ tableNumber, items }: { tableNumber: number; items: any[] }) => {
+  // Place order
+  const handlePlaceOrder = async ({ tableNumber, customerName, items }: { tableNumber?: number; customerName?: string; items: CreateOrderRequest['items'] }) => {
     try {
-      console.log('开始下单...', { tableNumber, items })
-      await ApiService.createOrder({ tableNumber, items })
-      console.log('下单成功，开始重新加载数据...')
-      await loadData() // 重新加载数据
-      console.log('数据重新加载完成，关闭模态框...')
-      setSelectedTable(null) // 关闭模态框
+      console.log('Placing order...', { tableNumber, customerName, items })
+      await ApiService.createOrder({ tableNumber, customerName, items })
+      console.log('Order placed, reloading...')
+      await loadData()
+      console.log('Reload done, closing modal...')
+  setSelectedTable(null)
+  setShowOrderModal(false)
     } catch (error) {
       console.error('Error placing order:', error)
-      alert('下单失败，请重试')
+      alert('Failed to place order. Please try again.')
     }
   }
 
-  // 处理更新订单
-  const handleUpdateOrder = async (updatedOrder: Order) => {
+  // Update order
+  const handleUpdateOrder = async (payload: { orderId: string; items: UpdateOrderRequest['items'] }) => {
     try {
-      await ApiService.updateOrder({
-        orderId: updatedOrder.id,
-        items: updatedOrder.items.map(item => ({
-          name: item.name,
-          temperature: item.temperature,
-          isUrgent: item.isUrgent
-        }))
-      })
+      await ApiService.updateOrder(payload)
       await loadData()
       setEditingOrder(null)
+      setShowOrderModal(false)
     } catch (error) {
       console.error('Error updating order:', error)
-      alert('更新订单失败，请重试')
+      alert('Failed to update order. Please try again.')
     }
   }
   
-  // 处理删除订单
+  // Delete order
   const handleDeleteOrder = async () => {
     if (!deletingOrderId) return
     
@@ -94,62 +90,62 @@ export default function HomePage() {
       setDeletingOrderId(null)
     } catch (error) {
       console.error('Error deleting order:', error)
-      alert('删除订单失败，请重试')
+      alert('Failed to delete order. Please try again.')
     }
   }
 
-  // 更新单个咖啡项目的状态
+  // Toggle single coffee item status
   const handleUpdateItemStatus = async (orderId: string, itemIndex: number) => {
     try {
       await ApiService.updateItemStatus(orderId, itemIndex)
       await loadData()
     } catch (error) {
       console.error('Error updating item status:', error)
-      alert('更新状态失败，请重试')
+      alert('Failed to update status. Please try again.')
     }
   }
 
-  // 导出数据为TXT文件
+  // Export data as TXT
   const handleExportData = () => {
     if (orders.length === 0) {
-      alert("没有可导出的订单数据。")
+      alert("No orders to export.")
       return
     }
 
     const totalCoffeeSummary: Record<string, number> = {}
-    const tableSummary: Record<number, Record<string, number>> = {}
+    const tableSummary: Record<string, Record<string, number>> = {}
 
-    orders.forEach(order => {
-      const tableNumber = order.tableNumber
-      if (!tableSummary[tableNumber]) {
-        tableSummary[tableNumber] = {}
-      }
-
-      order.items.forEach(item => {
-        const key = `${item.name} (${item.temperature === 'iced' ? '冰' : '热'})`
+    orders.forEach((order: Order) => {
+      order.items.forEach((item: CoffeeItem) => {
+        const key = `${item.name} (${item.temperature === 'iced' ? 'Iced' : 'Hot'})`
         totalCoffeeSummary[key] = (totalCoffeeSummary[key] || 0) + 1
-        tableSummary[tableNumber][key] = (tableSummary[tableNumber][key] || 0) + 1
+        if (typeof order.tableNumber === 'number') {
+          if (!tableSummary[order.tableNumber]) {
+            tableSummary[order.tableNumber] = {}
+          }
+          tableSummary[order.tableNumber][key] = (tableSummary[order.tableNumber][key] || 0) + 1
+        }
       })
     })
 
-    let content = "咖啡订单统计报告\n"
-    content += `导出时间: ${new Date().toLocaleString()}\n`
+    let content = "Coffee Orders Summary Report\n"
+    content += `Exported At: ${new Date().toLocaleString()}\n`
     content += "====================================\n\n"
 
-    content += "### 总计 ###\n"
+    content += "### Totals ###\n"
     const sortedTotalSummary = Object.entries(totalCoffeeSummary).sort((a, b) => a[0].localeCompare(b[0]))
     sortedTotalSummary.forEach(([name, count]) => {
-      content += `- ${name}: ${count} 杯\n`
+      content += `- ${name}: ${count}\n`
     })
     content += "\n====================================\n\n"
 
-    content += "### 按桌号分计 ###\n"
+    content += "### By Table ###\n"
     const sortedTableNumbers = Object.keys(tableSummary).sort((a, b) => parseInt(a) - parseInt(b))
     sortedTableNumbers.forEach(tableNumber => {
-      content += `\n--- 桌号: ${tableNumber} ---\n`
+      content += `\n--- Table: ${tableNumber} ---\n`
       const sortedItems = Object.entries(tableSummary[parseInt(tableNumber)]).sort((a, b) => a[0].localeCompare(b[0]))
       sortedItems.forEach(([name, count]) => {
-        content += `  - ${name}: ${count} 杯\n`
+        content += `  - ${name}: ${count}\n`
       })
     })
 
@@ -164,14 +160,14 @@ export default function HomePage() {
     URL.revokeObjectURL(url)
   }
 
-  // 结算功能 - 存档当前数据并清空
+  // Archive current data and clear
   const handleArchiveData = async () => {
     if (orders.length === 0) {
-      alert('没有数据可以结算')
+      alert('No data to archive')
       return
     }
 
-    const confirmMessage = `确定要结算本周数据吗？\n\n这将：\n1. 保存当前所有订单到历史记录\n2. 清空现有数据\n3. 重新开始统计\n\n当前共有 ${orders.length} 个订单`
+    const confirmMessage = `Archive this week's data?\n\nThis will:\n1. Save all current orders to History\n2. Clear existing data\n3. Start a new cycle\n\nCurrent orders: ${orders.length}`
     
     if (!confirm(confirmMessage)) {
       return
@@ -179,17 +175,17 @@ export default function HomePage() {
 
     setArchiving(true)
     try {
-      console.log('开始结算数据...')
+  console.log('Archiving data...')
       const result = await ApiService.archiveCurrentData()
-      console.log('结算完成:', result)
+  console.log('Archive done:', result)
       
-      // 重新加载数据（应该是空的）
+  // Reload (should be empty)
       await loadData()
       
-      alert(`结算成功！\n\n已将 ${result.archive?.totalOrders || 0} 个订单存档到历史记录中。`)
+  alert(`Archived successfully!\n\nSaved ${result.archive?.totalOrders || 0} orders to history.`)
     } catch (error) {
-      console.error('结算失败:', error)
-      alert('结算失败，请重试')
+  console.error('Archive failed:', error)
+  alert('Failed to archive. Please try again.')
     } finally {
       setArchiving(false)
     }
@@ -202,19 +198,20 @@ export default function HomePage() {
     const ready: Order[] = []
 
     for (const order of orders) {
-      if (order.items.every(item => item.status === 'ready')) {
+      if (order.items.every((item: CoffeeItem) => item.status === 'ready')) {
         ready.push(order)
         continue
       }
       
-      const decoratedItems = order.items.map((item, index) => ({
+      const decoratedItems = order.items.map((item: CoffeeItem, index: number) => ({
         ...item,
         orderId: order.id,
         originalIndex: index,
       }))
 
-      const isUrgent = order.items.some(i => i.isUrgent)
-      if (isUrgent) {
+      const isUrgent = order.items.some((i: CoffeeItem) => i.isUrgent)
+      // Name-only orders (no table) should appear in the urgent list as well
+      if (isUrgent || typeof order.tableNumber !== 'number') {
         urgentOrders.push({ ...order, items: decoratedItems })
       } else {
         if (!mergedNonUrgent[order.tableNumber]) {
@@ -234,7 +231,7 @@ export default function HomePage() {
     let nonUrgentList = Object.values(mergedNonUrgent)
     
     if (sortBy === 'table') {
-      nonUrgentList.sort((a, b) => a.tableNumber - b.tableNumber)
+      nonUrgentList.sort((a, b) => (a.tableNumber! - b.tableNumber!))
     } else {
       nonUrgentList.sort((a, b) => a.timestamp - b.timestamp)
     }
@@ -247,14 +244,14 @@ export default function HomePage() {
     }
   }, [orders, sortBy])
 
-  const totalPendingItems = Object.values(statistics.coffeeCounts).reduce((sum, count) => sum + count, 0)
+  const totalPendingItems = (Object.values(statistics.coffeeCounts) as number[]).reduce((sum, count) => sum + count, 0)
 
   if (loading) {
     return (
       <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center">
         <div className="text-center">
           <CoffeeCupIcon className="w-16 h-16 mx-auto mb-4 animate-pulse" />
-          <p className="text-xl">加载中...</p>
+          <p className="text-xl">Loading...</p>
         </div>
       </div>
     )
@@ -267,7 +264,7 @@ export default function HomePage() {
           <button 
             onClick={() => setShowLogsModal(true)} 
             className="p-2 rounded-md bg-gray-700 hover:bg-blue-600 text-white transition-colors" 
-            title="查看历史记录"
+            title="View history"
           >
             <HistoryIcon className="w-6 h-6"/>
           </button>
@@ -275,19 +272,19 @@ export default function HomePage() {
             onClick={handleArchiveData}
             disabled={archiving || orders.length === 0}
             className="p-2 rounded-md bg-gray-700 hover:bg-orange-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
-            title={archiving ? "结算中..." : "结算本周数据"}
+            title={archiving ? "Archiving..." : "Archive this week"}
           >
             <ArchiveIcon className="w-6 h-6"/>
           </button>
         </div>
         <h1 className="text-3xl font-bold text-center flex items-center justify-center gap-3">
           <CoffeeCupIcon className="w-8 h-8"/>
-          咖啡订单管理系统
+          Coffee Order Manager
         </h1>
         <button 
           onClick={handleExportData} 
           className="p-2 rounded-md bg-gray-700 hover:bg-green-600 text-white transition-colors" 
-          title="导出数据"
+          title="Export data"
         >
           <DownloadIcon className="w-6 h-6"/>
         </button>
@@ -300,12 +297,21 @@ export default function HomePage() {
             <Statistics stats={statistics} />
           </section>
           <section>
-            <h2 className="text-2xl font-semibold mb-4 pb-2 border-b-2 border-gray-700">选择餐桌下单</h2>
+            <h2 className="text-2xl font-semibold mb-4 pb-2 border-b-2 border-gray-700">Select a table to order</h2>
+            <div className="mb-4">
+              <button
+                onClick={() => { setSelectedTable(null); setShowOrderModal(true) }}
+                className="w-full px-3 py-2 rounded-md bg-red-700 hover:bg-red-600 text-white transition-colors"
+                title="Create a name-only priority order"
+              >
+                Priority order (name only)
+              </button>
+            </div>
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
               {Array.from({ length: TABLE_COUNT }, (_, i) => i + 1).map(tableNum => (
                 <button
                   key={tableNum}
-                  onClick={() => setSelectedTable(tableNum)}
+                  onClick={() => { setSelectedTable(tableNum); setShowOrderModal(true) }}
                   className="aspect-square flex items-center justify-center text-xl font-bold rounded-lg bg-gray-700 hover:bg-blue-600 hover:scale-105 transition-all duration-200 shadow-md"
                 >
                   {tableNum}
@@ -319,20 +325,20 @@ export default function HomePage() {
         <section className="lg:col-span-2">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold pb-2 border-b-2 border-gray-700 flex-grow">
-              订单队列 ({totalPendingItems} 待制作)
+              Preparing Queue ({totalPendingItems} pending)
             </h2>
             <div className="flex gap-2">
               <button 
                 onClick={() => setSortBy('table')} 
                 className={`px-3 py-1 text-sm rounded-md ${sortBy === 'table' ? 'bg-blue-600 text-white' : 'bg-gray-700'}`}
               >
-                按桌号
+                By table
               </button>
               <button 
                 onClick={() => setSortBy('time')} 
                 className={`px-3 py-1 text-sm rounded-md ${sortBy === 'time' ? 'bg-blue-600 text-white' : 'bg-gray-700'}`}
               >
-                按时间
+                By time
               </button>
             </div>
           </div>
@@ -351,32 +357,32 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="text-center py-16 px-6 bg-gray-800 rounded-lg">
-              <p className="text-gray-400">当前没有待制作的订单。</p>
+              <p className="text-gray-400">No orders are pending.</p>
             </div>
           )}
           
           <h2 className="text-2xl font-semibold mt-12 mb-4 pb-2 border-b-2 border-gray-700">
-            已完成 ({readyOrders.length})
+            Completed ({readyOrders.length})
           </h2>
           {readyOrders.length > 0 ? (
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
               {readyOrders.map(order => (
-                <OrderCard key={order.id} order={order} />
+                <OrderCard key={order.id} order={order} onUpdateItemStatus={handleUpdateItemStatus} />
               ))}
             </div>
           ) : (
             <div className="text-center py-16 px-6 bg-gray-800 rounded-lg">
-              <p className="text-gray-400">还没有已完成的订单。</p>
+              <p className="text-gray-400">No completed orders yet.</p>
             </div>
           )}
         </section>
       </main>
 
-      {(selectedTable || editingOrder) && (
+    {(showOrderModal || editingOrder) && (
         <OrderModal
           tableNumber={selectedTable}
           existingOrder={editingOrder}
-          onClose={() => { setSelectedTable(null); setEditingOrder(null) }}
+      onClose={() => { setSelectedTable(null); setEditingOrder(null); setShowOrderModal(false) }}
           onPlaceOrder={handlePlaceOrder}
           onUpdateOrder={handleUpdateOrder}
         />
@@ -390,7 +396,7 @@ export default function HomePage() {
       )}
 
       {showLogsModal && (
-        <LogsModal onClose={() => setShowLogsModal(false)} />
+  <LogsModal onClose={() => setShowLogsModal(false)} />
       )}
     </div>
   )
