@@ -1,6 +1,5 @@
 import { redis, REDIS_KEYS } from './redis'
 import { Order, OrderStats } from '@/types'
-import { v4 as uuidv4 } from 'uuid'
 
 export class OrderService {
   // 获取所有订单
@@ -46,7 +45,9 @@ export class OrderService {
     customerName?: string
   ): Promise<Order> {
     console.log('OrderService.createOrder - 开始创建订单:', { tableNumber, customerName, items })
-    const orderId = uuidv4()
+    const orderId = (globalThis as any).crypto && 'randomUUID' in (globalThis as any).crypto
+      ? (globalThis as any).crypto.randomUUID()
+      : Math.random().toString(36).slice(2)
     const timestamp = Date.now()
     
     const order: Order = {

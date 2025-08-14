@@ -4,6 +4,7 @@ import { DEFAULT_MENU, MenuItem } from '@/lib/menu'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+export const runtime = 'edge'
 
 const MENU_KEY = `${REDIS_KEYS.statistics}:menu`
 const ADMIN_TOKEN = process.env.MENU_ADMIN_TOKEN || 'abcd1234'

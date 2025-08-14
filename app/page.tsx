@@ -24,6 +24,27 @@ export default function HomePage() {
   const [showLogsModal, setShowLogsModal] = useState(false)
   const [archiving, setArchiving] = useState(false)
 
+  // Fast local stats calculator to avoid extra round-trips
+  const computeStats = (src: Order[]): OrderStats => {
+    const coffeeCounts: Record<string, number> = {}
+    const tableCounts: Record<string, number> = {}
+    for (const order of src) {
+      // Only count items still preparing
+      let pending = 0
+      for (const item of order.items) {
+        if (item.status === 'preparing') {
+          pending++
+          const key = `${item.name} (${item.temperature === 'iced' ? 'Iced' : 'Hot'})`
+          coffeeCounts[key] = (coffeeCounts[key] || 0) + 1
+        }
+      }
+      if (pending > 0 && typeof order.tableNumber === 'number') {
+        tableCounts[order.tableNumber.toString()] = (tableCounts[order.tableNumber.toString()] || 0) + pending
+      }
+    }
+    return { coffeeCounts, tableCounts }
+  }
+
   // Load data
   const loadData = async () => {
     try {
@@ -55,12 +76,15 @@ export default function HomePage() {
   const handlePlaceOrder = async ({ tableNumber, customerName, items }: { tableNumber?: number; customerName?: string; items: CreateOrderRequest['items'] }) => {
     try {
       console.log('Placing order...', { tableNumber, customerName, items })
-      await ApiService.createOrder({ tableNumber, customerName, items })
-      console.log('Order placed, reloading...')
-      await loadData()
-      console.log('Reload done, closing modal...')
-  setSelectedTable(null)
-  setShowOrderModal(false)
+      const created = await ApiService.createOrder({ tableNumber, customerName, items })
+      // Optimistic: merge created order locally and recompute stats
+      setOrders(prev => {
+        const next = [...prev, created]
+        setStatistics(computeStats(next))
+        return next
+      })
+      setSelectedTable(null)
+      setShowOrderModal(false)
     } catch (error) {
       console.error('Error placing order:', error)
       alert('Failed to place order. Please try again.')
@@ -70,8 +94,12 @@ export default function HomePage() {
   // Update order
   const handleUpdateOrder = async (payload: { orderId: string; items: UpdateOrderRequest['items'] }) => {
     try {
-      await ApiService.updateOrder(payload)
-      await loadData()
+      const updated = await ApiService.updateOrder(payload)
+      setOrders(prev => {
+        const next = prev.map(o => (o.id === updated.id ? updated : o))
+        setStatistics(computeStats(next))
+        return next
+      })
       setEditingOrder(null)
       setShowOrderModal(false)
     } catch (error) {
@@ -86,7 +114,11 @@ export default function HomePage() {
     
     try {
       await ApiService.deleteOrder(deletingOrderId)
-      await loadData()
+      setOrders(prev => {
+        const next = prev.filter(o => o.id !== deletingOrderId)
+        setStatistics(computeStats(next))
+        return next
+      })
       setDeletingOrderId(null)
     } catch (error) {
       console.error('Error deleting order:', error)
@@ -96,12 +128,28 @@ export default function HomePage() {
 
   // Toggle single coffee item status
   const handleUpdateItemStatus = async (orderId: string, itemIndex: number) => {
+    // Optimistic toggle
+    let reverted = false
+    setOrders((prev: Order[]) => {
+      const next = prev.map(o => {
+        if (o.id !== orderId) return o
+        const items = o.items.map((it, idx) =>
+          idx === itemIndex
+            ? { ...it, status: (it.status === 'preparing' ? 'ready' : 'preparing') as 'preparing' | 'ready' }
+            : it
+        )
+        return { ...o, items }
+      })
+      setStatistics(computeStats(next))
+      return next
+    })
     try {
       await ApiService.updateItemStatus(orderId, itemIndex)
-      await loadData()
     } catch (error) {
-      console.error('Error updating item status:', error)
-      alert('Failed to update status. Please try again.')
+      console.error('Error updating item status, reloading to revert:', error)
+      reverted = true
+      await loadData()
+      alert('Failed to update status. Refreshed data.')
     }
   }
 

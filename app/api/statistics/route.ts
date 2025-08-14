@@ -3,6 +3,7 @@ import { OrderService } from '@/lib/order-service'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+export const runtime = 'edge'
 
 export async function GET() {
   try {
