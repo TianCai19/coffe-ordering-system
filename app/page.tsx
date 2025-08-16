@@ -19,7 +19,7 @@ export default function HomePage() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<'table' | 'table-desc' | 'time'>('table')
+  const [sortBy, setSortBy] = useState<'table' | 'table-desc' | 'time'>('time')
   const [loading, setLoading] = useState(true)
   const [showLogsModal, setShowLogsModal] = useState(false)
   const [archiving, setArchiving] = useState(false)
