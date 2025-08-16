@@ -107,18 +107,47 @@ export const OrderCard: React.FC<OrderCardProps> = ({
               </span>
               
               {onUpdateItemStatus && (
-                <div className="flex flex-nowrap gap-1.5">
-                  {group.details.map((detail, index: number) => (
-                    <button 
-                      key={index} 
-                      onClick={() => onUpdateItemStatus(detail.orderId, detail.originalIndex)}
-                      className={`p-1 rounded-full transition-colors relative ${detail.status === 'ready' ? 'bg-green-500 text-white' : 'bg-gray-600 hover:bg-blue-600 text-gray-400'}`}
-                    >
-                      {detail.isUrgent && detail.status === 'preparing' && <ZapIcon className="w-3 h-3 absolute -top-1 -right-1 text-red-400 fill-current" />}
-                      <CheckCircleIcon className="w-4 h-4" />
-                    </button>
-                  ))}
-                </div>
+                group.details.length > 4 ? (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex gap-1.5">
+                      {group.details.slice(0, 4).map((detail, index: number) => (
+                        <button
+                          key={index}
+                          onClick={() => onUpdateItemStatus(detail.orderId, detail.originalIndex)}
+                          className={`p-1 rounded-full transition-colors relative ${detail.status === 'ready' ? 'bg-green-500 text-white' : 'bg-gray-600 hover:bg-blue-600 text-gray-400'}`}
+                        >
+                          {detail.isUrgent && detail.status === 'preparing' && <ZapIcon className="w-3 h-3 absolute -top-1 -right-1 text-red-400 fill-current" />}
+                          <CheckCircleIcon className="w-4 h-4" />
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-1.5">
+                      {group.details.slice(4).map((detail, index: number) => (
+                        <button
+                          key={index + 4}
+                          onClick={() => onUpdateItemStatus(detail.orderId, detail.originalIndex)}
+                          className={`p-1 rounded-full transition-colors relative ${detail.status === 'ready' ? 'bg-green-500 text-white' : 'bg-gray-600 hover:bg-blue-600 text-gray-400'}`}
+                        >
+                          {detail.isUrgent && detail.status === 'preparing' && <ZapIcon className="w-3 h-3 absolute -top-1 -right-1 text-red-400 fill-current" />}
+                          <CheckCircleIcon className="w-4 h-4" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-nowrap gap-1.5">
+                    {group.details.map((detail, index: number) => (
+                      <button
+                        key={index}
+                        onClick={() => onUpdateItemStatus(detail.orderId, detail.originalIndex)}
+                        className={`p-1 rounded-full transition-colors relative ${detail.status === 'ready' ? 'bg-green-500 text-white' : 'bg-gray-600 hover:bg-blue-600 text-gray-400'}`}
+                      >
+                        {detail.isUrgent && detail.status === 'preparing' && <ZapIcon className="w-3 h-3 absolute -top-1 -right-1 text-red-400 fill-current" />}
+                        <CheckCircleIcon className="w-4 h-4" />
+                      </button>
+                    ))}
+                  </div>
+                )
               )}
             </li>
           )
