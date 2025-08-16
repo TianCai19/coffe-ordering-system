@@ -7,9 +7,9 @@ export async function PUT(
 ) {
   try {
     console.log('PUT /api/orders/[id] - 开始更新订单')
-    const { items } = await request.json()
+  const { items, remark } = await request.json()
     const orderId = params.id
-    console.log('PUT /api/orders/[id] - 请求数据:', { orderId, items })
+  console.log('PUT /api/orders/[id] - 请求数据:', { orderId, remark, items })
     
     if (!items || !Array.isArray(items)) {
       console.log('PUT /api/orders/[id] - 无效的请求数据')
@@ -19,7 +19,7 @@ export async function PUT(
       )
     }
 
-    const order = await OrderService.updateOrder(orderId, items)
+  const order = await OrderService.updateOrder(orderId, items, remark)
     console.log('PUT /api/orders/[id] - 更新结果:', order)
     
     if (!order) {

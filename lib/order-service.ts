@@ -42,7 +42,8 @@ export class OrderService {
   static async createOrder(
     tableNumber: number | undefined,
     items: Array<{ name: string; temperature: 'hot' | 'iced'; isUrgent: boolean }>,
-    customerName?: string
+    customerName?: string,
+    remark?: string
   ): Promise<Order> {
     console.log('OrderService.createOrder - 开始创建订单:', { tableNumber, customerName, items })
     const orderId = (globalThis as any).crypto && 'randomUUID' in (globalThis as any).crypto
@@ -54,6 +55,7 @@ export class OrderService {
       id: orderId,
       tableNumber,
       customerName,
+      remark,
       timestamp,
       status: 'pending',
       items: items.map((item, index) => ({
@@ -76,7 +78,7 @@ export class OrderService {
     name: string
     temperature: 'hot' | 'iced'
     isUrgent: boolean
-  }>): Promise<Order | null> {
+  }>, remark?: string): Promise<Order | null> {
     try {
       console.log('OrderService.updateOrder - 开始更新订单:', { orderId, items })
       const orderData = await redis.hget(REDIS_KEYS.orders, orderId)
@@ -103,6 +105,9 @@ export class OrderService {
         orderId,
         originalIndex: index,
       }))
+      if (typeof remark === 'string') {
+        order.remark = remark
+      }
 
       console.log('OrderService.updateOrder - 更新后的订单:', order)
       await redis.hset(REDIS_KEYS.orders, { [orderId]: JSON.stringify(order) })

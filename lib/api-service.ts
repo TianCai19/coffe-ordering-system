@@ -65,7 +65,7 @@ export class ApiService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ items: request.items }),
+  body: JSON.stringify({ items: request.items, remark: request.remark }),
       })
       
       if (!response.ok) throw new Error('Failed to update order')

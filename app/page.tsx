@@ -19,7 +19,7 @@ export default function HomePage() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<'table' | 'time'>('table')
+  const [sortBy, setSortBy] = useState<'table' | 'table-desc' | 'time'>('table')
   const [loading, setLoading] = useState(true)
   const [showLogsModal, setShowLogsModal] = useState(false)
   const [archiving, setArchiving] = useState(false)
@@ -73,10 +73,10 @@ export default function HomePage() {
   }, [])
 
   // Place order
-  const handlePlaceOrder = async ({ tableNumber, customerName, items }: { tableNumber?: number; customerName?: string; items: CreateOrderRequest['items'] }) => {
+  const handlePlaceOrder = async ({ tableNumber, customerName, remark, items }: { tableNumber?: number; customerName?: string; remark?: string; items: CreateOrderRequest['items'] }) => {
     try {
-      console.log('Placing order...', { tableNumber, customerName, items })
-      const created = await ApiService.createOrder({ tableNumber, customerName, items })
+  console.log('Placing order...', { tableNumber, customerName, remark, items })
+  const created = await ApiService.createOrder({ tableNumber, customerName, remark, items })
       // Optimistic: merge created order locally and recompute stats
       setOrders(prev => {
         const next = [...prev, created]
@@ -280,6 +280,8 @@ export default function HomePage() {
     
     if (sortBy === 'table') {
       nonUrgentList.sort((a, b) => (a.tableNumber! - b.tableNumber!))
+    } else if (sortBy === 'table-desc') {
+      nonUrgentList.sort((a, b) => (b.tableNumber! - a.tableNumber!))
     } else {
       nonUrgentList.sort((a, b) => a.timestamp - b.timestamp)
     }
@@ -381,6 +383,12 @@ export default function HomePage() {
                 className={`px-3 py-1 text-sm rounded-md ${sortBy === 'table' ? 'bg-blue-600 text-white' : 'bg-gray-700'}`}
               >
                 By table
+              </button>
+              <button 
+                onClick={() => setSortBy('table-desc')} 
+                className={`px-3 py-1 text-sm rounded-md ${sortBy === 'table-desc' ? 'bg-blue-600 text-white' : 'bg-gray-700'}`}
+              >
+                By table (desc)
               </button>
               <button 
                 onClick={() => setSortBy('time')} 
