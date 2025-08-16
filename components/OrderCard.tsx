@@ -73,6 +73,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         <div>
       <h3 className="font-bold text-xl text-white">{order.customerName ? `Customer: ${order.customerName}` : `Table: ${tableNumber}`}</h3>
       <p className="text-xs text-gray-400">First item at: {new Date(timestamp).toLocaleTimeString()}</p>
+      {order.remark && (
+        <p className="text-xs mt-1 text-yellow-300">Remark: {order.remark}</p>
+      )}
         </div>
         <div className="flex items-center gap-2">
           {isUrgentCard && (

@@ -9,15 +9,16 @@ import { ApiService } from '@/lib/api-service'
 interface OrderModalProps {
   tableNumber: number | null
   onClose: () => void
-  onPlaceOrder: (order: { tableNumber?: number; customerName?: string; items: CreateOrderRequest['items'] }) => void
+  onPlaceOrder: (order: { tableNumber?: number; customerName?: string; remark?: string; items: CreateOrderRequest['items'] }) => void
   existingOrder?: Order | null
-  onUpdateOrder?: (payload: { orderId: string; items: UpdateOrderRequest['items'] }) => void
+  onUpdateOrder?: (payload: { orderId: string; items: UpdateOrderRequest['items']; remark?: string }) => void
 }
 
 export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) => {
   const { tableNumber, onClose, onPlaceOrder, existingOrder, onUpdateOrder } = props
   const isEditMode = !!existingOrder
   const [customerName, setCustomerName] = useState<string>(existingOrder?.customerName || '')
+  const [remark, setRemark] = useState<string>(existingOrder?.remark || '')
   
   const [selectedCoffees, setSelectedCoffees] = useState<Record<string, { hot: number; iced: number }>>(() => {
     if (!isEditMode || !existingOrder) return {}
@@ -99,14 +100,14 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
 
     if (isEditMode && onUpdateOrder && existingOrder) {
       const updateItems: UpdateOrderRequest['items'] = items.map(i => ({ name: i.name, temperature: i.temperature, isUrgent: i.isUrgent }))
-      onUpdateOrder({ orderId: existingOrder.id, items: updateItems })
+      onUpdateOrder({ orderId: existingOrder.id, items: updateItems, remark })
     } else {
       // If no table selected, require a customer name for priority orders
       if (!tableNumber && !customerName.trim()) {
         alert('Please enter a customer name for priority orders.')
         return
       }
-      onPlaceOrder({ tableNumber: tableNumber ?? undefined, customerName: customerName.trim() || undefined, items })
+  onPlaceOrder({ tableNumber: tableNumber ?? undefined, customerName: customerName.trim() || undefined, remark: remark.trim() || undefined, items })
     }
   }
   
@@ -134,6 +135,28 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
             />
           </div>
         )}
+        {/* Remark */}
+        <div className="mb-4">
+          <label className="block text-sm text-gray-300 mb-1">Remark</label>
+          <textarea
+            value={remark}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRemark(e.target.value)}
+            placeholder="Add any special notes (e.g., extra sugar, less ice)"
+            className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[70px]"
+          />
+          <div className="flex flex-wrap gap-2 mt-2 text-xs">
+            {['Extra sugar', 'Less ice', 'No sugar', 'Oat milk', 'Decaf'].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setRemark(r => r ? `${r} | ${preset}` : preset)}
+                className="px-2 py-1 rounded bg-gray-600 hover:bg-gray-500 text-white"
+              >
+                + {preset}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="space-y-3 mb-6 max-h-[60vh] overflow-y-auto pr-2">
           {menu.map(coffeeItem => {
             const coffee = coffeeItem.name

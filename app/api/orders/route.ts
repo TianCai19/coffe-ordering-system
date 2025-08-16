@@ -23,8 +23,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
   console.log('POST /api/orders - creating order')
-  const { tableNumber, customerName, items } = await request.json()
-  console.log('POST /api/orders - payload:', { tableNumber, customerName, items })
+  const { tableNumber, customerName, items, remark } = await request.json()
+  console.log('POST /api/orders - payload:', { tableNumber, customerName, remark, items })
     
   if ((!tableNumber && !customerName) || !items || !Array.isArray(items)) {
       return NextResponse.json(
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-  const order = await OrderService.createOrder(tableNumber, items, customerName)
+  const order = await OrderService.createOrder(tableNumber, items, customerName, remark)
   console.log('POST /api/orders - created order:', order)
   return NextResponse.json({ order }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
