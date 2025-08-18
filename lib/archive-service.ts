@@ -92,13 +92,32 @@ export class ArchiveService {
 
       const archive: ArchiveEntry = {
         id: uuidv4(),
-        date: new Date().toLocaleString('zh-CN'),
+        date: new Date().toLocaleString('en-MY', { 
+          timeZone: 'Asia/Kuala_Lumpur',
+          year: 'numeric',
+          month: '2-digit', 
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true
+        }),
         totalOrders: orders.length,
         totalItems,
         coffeeCounts,
   tableCounts: Object.fromEntries(Object.entries(tableCounts).sort((a, b) => Number(a[0]) - Number(b[0]))),
-        weekStartDate: startOfWeek.toLocaleDateString('zh-CN'),
-        weekEndDate: endOfWeek.toLocaleDateString('zh-CN'),
+        weekStartDate: startOfWeek.toLocaleDateString('en-MY', { 
+          timeZone: 'Asia/Kuala_Lumpur',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }),
+        weekEndDate: endOfWeek.toLocaleDateString('en-MY', { 
+          timeZone: 'Asia/Kuala_Lumpur',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }),
         originalData: orders
       }
 
