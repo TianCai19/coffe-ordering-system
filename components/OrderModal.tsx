@@ -8,6 +8,7 @@ import { ApiService } from '@/lib/api-service'
 
 interface OrderModalProps {
   tableNumber: number | null
+  theme?: 'dark' | 'light'
   onClose: () => void
   onPlaceOrder: (order: { tableNumber?: number; customerName?: string; remark?: string; items: CreateOrderRequest['items'] }) => void
   existingOrder?: Order | null
@@ -15,7 +16,7 @@ interface OrderModalProps {
 }
 
 export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) => {
-  const { tableNumber, onClose, onPlaceOrder, existingOrder, onUpdateOrder } = props
+  const { tableNumber, theme = 'dark', onClose, onPlaceOrder, existingOrder, onUpdateOrder } = props
   const isEditMode = !!existingOrder
   const [customerName, setCustomerName] = useState<string>(existingOrder?.customerName || '')
   const [remark, setRemark] = useState<string>(existingOrder?.remark || '')
@@ -114,10 +115,25 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
   const totalItems = (Object.values(selectedCoffees) as Array<{ hot: number; iced: number }>).reduce((sum, temps) => sum + temps.hot + temps.iced, 0)
   const currentTableNumber = isEditMode ? existingOrder?.tableNumber ?? null : tableNumber
 
+  // Theme-aware classes
+  const themeClasses = {
+    overlay: theme === 'dark' ? 'bg-black bg-opacity-75' : 'bg-black bg-opacity-50',
+    modal: theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200',
+    heading: theme === 'dark' ? 'text-white' : 'text-gray-900',
+    label: theme === 'dark' ? 'text-gray-300' : 'text-gray-700',
+    input: theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900',
+    button: theme === 'dark' ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900',
+    primaryButton: 'bg-green-600 hover:bg-green-700 text-white',
+    itemCard: theme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-100',
+    itemText: theme === 'dark' ? 'text-gray-300' : 'text-gray-700',
+    countButton: theme === 'dark' ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900',
+    countDisplay: theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-white text-gray-900 border-gray-300'
+  }
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
-      <div className="bg-gray-800 rounded-xl p-8 w-full max-w-2xl m-4 shadow-2xl border border-gray-700">
-        <h2 className="text-3xl font-bold text-white mb-6">
+    <div className={`fixed inset-0 ${themeClasses.overlay} flex justify-center items-center z-50`}>
+      <div className={`${themeClasses.modal} rounded-xl p-8 w-full max-w-2xl m-4 shadow-2xl border`}>
+        <h2 className={`text-3xl font-bold ${themeClasses.heading} mb-6`}>
           {isEditMode 
             ? `Edit order for ${existingOrder?.customerName ? `Customer ${existingOrder?.customerName}` : `Table ${currentTableNumber}`}`
             : currentTableNumber 
@@ -126,23 +142,23 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
         </h2>
         {!currentTableNumber && (
           <div className="mb-4">
-            <label className="block text-sm text-gray-300 mb-1">Customer Name</label>
+            <label className={`block text-sm ${themeClasses.label} mb-1`}>Customer Name</label>
             <input 
               value={customerName} 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerName(e.target.value)}
               placeholder="Enter name"
-              className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 rounded ${themeClasses.input} focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
           </div>
         )}
         {/* Remark */}
         <div className="mb-4">
-          <label className="block text-sm text-gray-300 mb-1">Remark</label>
+          <label className={`block text-sm ${themeClasses.label} mb-1`}>Remark</label>
           <textarea
             value={remark}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRemark(e.target.value)}
             placeholder="Add any special notes (e.g., extra sugar, less ice)"
-            className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[70px]"
+            className={`w-full px-3 py-2 rounded ${themeClasses.input} focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[70px]`}
           />
           <div className="flex flex-wrap gap-2 mt-2 text-xs">
             {['Extra sugar', 'Less ice', 'No sugar', 'Oat milk', 'Decaf'].map((preset) => (
@@ -150,7 +166,7 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                 key={preset}
                 type="button"
                 onClick={() => setRemark(r => r ? `${r} | ${preset}` : preset)}
-                className="px-2 py-1 rounded bg-gray-600 hover:bg-gray-500 text-white"
+                className={`px-2 py-1 rounded ${themeClasses.button}`}
               >
                 + {preset}
               </button>
@@ -164,12 +180,17 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
             const isUrgent = urgentTypes.has(coffee)
             const hasSelection = quantities.hot > 0 || quantities.iced > 0
             return (
-              <div key={coffee} className={`p-4 rounded-lg transition-colors ${isUrgent ? 'bg-red-900/50' : 'bg-gray-700'}`}>
+              <div key={coffee} className={`p-4 rounded-lg transition-colors ${isUrgent ? 
+                (theme === 'dark' ? 'bg-red-900/50' : 'bg-red-50') : 
+                (theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100')}`}>
                 <div className="flex justify-between items-center">
-                  <span className={`font-medium text-lg ${isUrgent ? 'text-red-300' : 'text-gray-200'}`}>{coffee}</span>
+                  <span className={`font-medium text-lg ${isUrgent ? 
+                    (theme === 'dark' ? 'text-red-300' : 'text-red-700') : 
+                    themeClasses.itemText}`}>{coffee}</span>
                   <button 
                     onClick={() => toggleUrgent(coffee)} 
-                    className={`p-2 rounded-full transition-colors ${isUrgent ? 'bg-red-500 text-white' : 'bg-gray-600 hover:bg-red-500'} ${!hasSelection && 'opacity-50 cursor-not-allowed'}`}
+                    className={`p-2 rounded-full transition-colors ${isUrgent ? 'bg-red-500 text-white' : 
+                      (theme === 'dark' ? 'bg-gray-600 hover:bg-red-500' : 'bg-gray-200 hover:bg-red-500 hover:text-white')} ${!hasSelection && 'opacity-50 cursor-not-allowed'}`}
                     disabled={!hasSelection}
                   >
                     <ZapIcon className="w-5 h-5"/>
@@ -177,20 +198,20 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-4">
                   {/* Hot Controls */}
-                  <div className="flex items-center justify-between bg-gray-800/50 p-2 rounded-md opacity-100">
-                    <span className="font-semibold text-orange-300">Hot</span>
+                  <div className={`flex items-center justify-between ${themeClasses.itemCard} p-2 rounded-md opacity-100`}>
+                    <span className={`font-semibold ${theme === 'dark' ? 'text-orange-300' : 'text-orange-600'}`}>Hot</span>
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'hot', -1)} 
-                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-red-600 text-white font-bold text-lg transition-colors"
+                        className={`w-7 h-7 rounded-full ${themeClasses.countButton} font-bold text-lg transition-colors`}
                         disabled={!coffeeItem.hot}
                       >
                         -
                       </button>
-                      <span className={`w-8 text-center text-xl font-bold ${!coffeeItem.hot ? 'opacity-50' : ''}`}>{quantities.hot}</span>
+                      <span className={`w-8 text-center text-xl font-bold ${themeClasses.itemText} ${!coffeeItem.hot ? 'opacity-50' : ''}`}>{quantities.hot}</span>
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'hot', 1)} 
-                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-green-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
+                        className={`w-7 h-7 rounded-full ${themeClasses.countButton} hover:bg-green-600 hover:text-white font-bold text-lg transition-colors disabled:opacity-50`}
                         disabled={!coffeeItem.hot}
                       >
                         +
@@ -198,20 +219,20 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                     </div>
                   </div>
                   {/* Iced Controls */}
-                  <div className="flex items-center justify-between bg-gray-800/50 p-2 rounded-md">
-                    <span className="font-semibold text-blue-300">Iced</span>
+                  <div className={`flex items-center justify-between ${themeClasses.itemCard} p-2 rounded-md`}>
+                    <span className={`font-semibold ${theme === 'dark' ? 'text-blue-300' : 'text-blue-600'}`}>Iced</span>
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'iced', -1)} 
-                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-red-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
+                        className={`w-7 h-7 rounded-full ${themeClasses.countButton} font-bold text-lg transition-colors disabled:opacity-50`}
                         disabled={!coffeeItem.iced}
                       >
                         -
                       </button>
-                      <span className={`w-8 text-center text-xl font-bold ${!coffeeItem.iced ? 'opacity-50' : ''}`}>{quantities.iced}</span>
+                      <span className={`w-8 text-center text-xl font-bold ${themeClasses.itemText} ${!coffeeItem.iced ? 'opacity-50' : ''}`}>{quantities.iced}</span>
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'iced', 1)} 
-                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-green-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
+                        className={`w-7 h-7 rounded-full ${themeClasses.countButton} hover:bg-green-600 hover:text-white font-bold text-lg transition-colors disabled:opacity-50`}
                         disabled={!coffeeItem.iced}
                       >
                         +
@@ -226,13 +247,13 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
         <div className="flex justify-between gap-4">
           <button 
             onClick={onClose} 
-            className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+            className={`w-full ${themeClasses.button} font-bold py-3 px-4 rounded-lg transition-colors`}
           >
             Cancel
           </button>
           <button 
             onClick={handleSubmit} 
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:bg-gray-500" 
+            className={`w-full ${themeClasses.primaryButton} font-bold py-3 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed`}
             disabled={totalItems === 0}
           >
             {isEditMode ? 'Update Order' : `Place Order (${totalItems})`}

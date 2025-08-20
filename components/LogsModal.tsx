@@ -14,10 +14,11 @@ interface ArchiveEntry {
 }
 
 interface LogsModalProps {
+  theme?: 'dark' | 'light'
   onClose: () => void
 }
 
-export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
+export const LogsModal: React.FC<LogsModalProps> = ({ theme = 'dark', onClose }) => {
   const [archives, setArchives] = useState<ArchiveEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedArchive, setSelectedArchive] = useState<ArchiveEntry | null>(null)
@@ -67,13 +68,26 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
     URL.revokeObjectURL(url)
   }
 
+  // Theme-aware classes
+  const themeClasses = {
+    overlay: theme === 'dark' ? 'bg-black bg-opacity-75' : 'bg-black bg-opacity-50',
+    modal: theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200',
+    heading: theme === 'dark' ? 'text-white' : 'text-gray-900',
+    text: theme === 'dark' ? 'text-gray-300' : 'text-gray-600',
+    mutedText: theme === 'dark' ? 'text-gray-400' : 'text-gray-500',
+    card: theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100',
+    cardHover: theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-200',
+    detailCard: theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50',
+    button: theme === 'dark' ? 'bg-gray-700 hover:bg-red-600 text-white' : 'bg-gray-200 hover:bg-red-500 hover:text-white text-gray-700'
+  }
+
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
-        <div className="bg-gray-800 rounded-xl p-8 w-full max-w-4xl m-4 shadow-2xl border border-gray-700">
+      <div className={`fixed inset-0 ${themeClasses.overlay} flex justify-center items-center z-50`}>
+        <div className={`${themeClasses.modal} rounded-xl p-8 w-full max-w-4xl m-4 shadow-2xl border`}>
           <div className="text-center">
             <CoffeeCupIcon className="w-16 h-16 mx-auto mb-4 animate-pulse" />
-            <p className="text-xl text-white">Loading history...</p>
+            <p className={`text-xl ${themeClasses.heading}`}>Loading history...</p>
           </div>
         </div>
       </div>
