@@ -501,13 +501,14 @@ export default function HomePage() {
 
       {deletingOrderId && (
         <ConfirmDeleteModal
+          theme={theme}
           onConfirm={handleDeleteOrder}
           onCancel={() => setDeletingOrderId(null)}
         />
       )}
 
       {showLogsModal && (
-  <LogsModal onClose={() => setShowLogsModal(false)} />
+  <LogsModal theme={theme} onClose={() => setShowLogsModal(false)} />
       )}
     </div>
   )
