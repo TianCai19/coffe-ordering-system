@@ -257,7 +257,7 @@ export default function HomePage() {
         originalIndex: index,
       }))
 
-      const isUrgent = order.items.some((i: CoffeeItem) => i.isUrgent)
+      const isUrgent = order.items.some((i: CoffeeItem) => i.isUrgent && i.status === 'preparing')
       // Name-only orders (no table) should appear in the urgent list as well
       if (isUrgent || typeof order.tableNumber !== 'number') {
         urgentOrders.push({ ...order, items: decoratedItems })
