@@ -182,7 +182,7 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'hot', -1)} 
-                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-red-600 text-white font-bold text-lg transition-colors"
+                        className="w-12 h-12 rounded-full bg-gray-600 hover:bg-red-600 text-white font-bold text-lg transition-colors"
                         disabled={!coffeeItem.hot}
                       >
                         -
@@ -190,7 +190,7 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                       <span className={`w-8 text-center text-xl font-bold ${!coffeeItem.hot ? 'opacity-50' : ''}`}>{quantities.hot}</span>
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'hot', 1)} 
-                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-green-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
+                        className="w-12 h-12 rounded-full bg-gray-600 hover:bg-green-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
                         disabled={!coffeeItem.hot}
                       >
                         +
@@ -203,7 +203,7 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'iced', -1)} 
-                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-red-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
+                        className="w-12 h-12 rounded-full bg-gray-600 hover:bg-red-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
                         disabled={!coffeeItem.iced}
                       >
                         -
@@ -211,7 +211,7 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                       <span className={`w-8 text-center text-xl font-bold ${!coffeeItem.iced ? 'opacity-50' : ''}`}>{quantities.iced}</span>
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'iced', 1)} 
-                        className="w-7 h-7 rounded-full bg-gray-600 hover:bg-green-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
+                        className="w-12 h-12 rounded-full bg-gray-600 hover:bg-green-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
                         disabled={!coffeeItem.iced}
                       >
                         +
