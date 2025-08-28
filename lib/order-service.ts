@@ -41,7 +41,7 @@ export class OrderService {
   // 创建新订单
   static async createOrder(
     tableNumber: number | undefined,
-    items: Array<{ name: string; temperature: 'hot' | 'iced'; isUrgent: boolean }>,
+    items: Array<{ name: string; temperature: 'hot' | 'iced'; isUrgent: boolean; remark?: string }>,
     customerName?: string,
     remark?: string
   ): Promise<Order> {
@@ -78,6 +78,7 @@ export class OrderService {
     name: string
     temperature: 'hot' | 'iced'
     isUrgent: boolean
+    remark?: string
   }>, remark?: string): Promise<Order | null> {
     try {
       console.log('OrderService.updateOrder - 开始更新订单:', { orderId, items })
