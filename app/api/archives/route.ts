@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const runtime = 'edge'
 
+const ARCHIVE_PASSWORD = process.env.ARCHIVE_PASSWORD || '66668888'
+
 export async function GET() {
   try {
     console.log('GET /api/archives - 开始获取存档')
@@ -20,8 +22,19 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
+    // Check password authentication
+    const body = await req.json()
+    const { password } = body
+
+    if (!password || password !== ARCHIVE_PASSWORD) {
+      return NextResponse.json(
+        { error: 'Invalid password' },
+        { status: 401 }
+      )
+    }
+
     console.log('POST /api/archives - 开始存档当前数据')
     const archive = await ArchiveService.archiveCurrentData()
     console.log('POST /api/archives - 存档完成:', archive)

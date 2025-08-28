@@ -128,16 +128,22 @@ export class ApiService {
     }
   }
 
-  static async archiveCurrentData(): Promise<any> {
+  static async archiveCurrentData(password: string): Promise<any> {
     try {
       const response = await fetch(`${API_BASE}/api/archives`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ password }),
       })
       
-      if (!response.ok) throw new Error('Failed to archive data')
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Invalid password')
+        }
+        throw new Error('Failed to archive data')
+      }
       return await response.json()
     } catch (error) {
       console.error('Error archiving data:', error)
