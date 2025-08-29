@@ -116,7 +116,7 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
-      <div className="bg-gray-800 rounded-xl p-8 w-full max-w-2xl m-4 shadow-2xl border border-gray-700">
+      <div className="bg-gray-800 rounded-xl p-8 w-full max-w-3xl m-4 shadow-2xl border border-gray-700">
         <h2 className="text-3xl font-bold text-white mb-6">
           {isEditMode 
             ? `Edit order for ${existingOrder?.customerName ? `Customer ${existingOrder?.customerName}` : `Table ${currentTableNumber}`}`
@@ -175,10 +175,15 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                     <ZapIcon className="w-5 h-5"/>
                   </button>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-4">
+                {/* Temperature labels at the top */}
+                <div className="mt-3 mb-2 grid grid-cols-2 gap-4 text-center">
+                  <div className="font-semibold text-orange-300">Hot</div>
+                  <div className="font-semibold text-blue-300">Iced</div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
                   {/* Hot Controls */}
-                  <div className="flex items-center justify-between bg-gray-800/50 p-2 rounded-md opacity-100">
-                    <span className="font-semibold text-orange-300">Hot</span>
+                  <div className="flex items-center justify-center bg-orange-900/20 p-3 rounded-md border border-orange-800/30">
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'hot', -1)} 
@@ -198,8 +203,7 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                     </div>
                   </div>
                   {/* Iced Controls */}
-                  <div className="flex items-center justify-between bg-gray-800/50 p-2 rounded-md">
-                    <span className="font-semibold text-blue-300">Iced</span>
+                  <div className="flex items-center justify-center bg-blue-900/20 p-3 rounded-md border border-blue-800/30">
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'iced', -1)} 
