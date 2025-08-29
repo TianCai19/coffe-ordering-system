@@ -6,6 +6,7 @@ export interface CoffeeItem {
   isUrgent: boolean
   orderId: string
   originalIndex: number
+  remark?: string
 }
 
 export interface Order {
@@ -31,6 +32,7 @@ export interface CreateOrderRequest {
     name: string
     temperature: 'hot' | 'iced'
     isUrgent: boolean
+    remark?: string
   }>
 }
 
@@ -41,6 +43,7 @@ export interface UpdateOrderRequest {
     name: string
     temperature: 'hot' | 'iced'
     isUrgent: boolean
+    remark?: string
   }>
 }
 

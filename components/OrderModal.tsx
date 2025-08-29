@@ -20,6 +20,21 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
   const [customerName, setCustomerName] = useState<string>(existingOrder?.customerName || '')
   const [remark, setRemark] = useState<string>(existingOrder?.remark || '')
   
+  // State for individual item remarks: coffeeName -> { hot: remark, iced: remark }
+  const [itemRemarks, setItemRemarks] = useState<Record<string, { hot: string; iced: string }>>(() => {
+    if (!isEditMode || !existingOrder) return {}
+    const initial: Record<string, { hot: string; iced: string }> = {}
+    existingOrder.items.forEach(item => {
+      if (!initial[item.name]) {
+        initial[item.name] = { hot: '', iced: '' }
+      }
+      if (item.remark) {
+        initial[item.name][item.temperature] = item.remark
+      }
+    })
+    return initial
+  })
+  
   const [selectedCoffees, setSelectedCoffees] = useState<Record<string, { hot: number; iced: number }>>(() => {
     if (!isEditMode || !existingOrder) return {}
     const initial: Record<string, { hot: number; iced: number }> = {}
@@ -85,11 +100,64 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
     })
   }
 
+  const updateItemRemark = (coffeeName: string, temperature: 'hot' | 'iced', remark: string) => {
+    setItemRemarks(prev => ({
+      ...prev,
+      [coffeeName]: {
+        hot: prev[coffeeName]?.hot || '',
+        iced: prev[coffeeName]?.iced || '',
+        [temperature]: remark
+      }
+    }))
+  }
+
+  const addQuickRemarkToItem = (coffeeName: string, temperature: 'hot' | 'iced', quickRemark: string) => {
+    setItemRemarks(prev => {
+      const current = prev[coffeeName]?.[temperature] || ''
+      const newRemark = current ? `${current} | ${quickRemark}` : quickRemark
+      return {
+        ...prev,
+        [coffeeName]: {
+          hot: prev[coffeeName]?.hot || '',
+          iced: prev[coffeeName]?.iced || '',
+          [temperature]: newRemark
+        }
+      }
+    })
+  }
+
+  // Get quick remark options based on drink name
+  const getQuickRemarks = (drinkName: string): string[] => {
+    const lowerName = drinkName.toLowerCase()
+    if (lowerName.includes('black') || lowerName.includes('white')) {
+      return ['More shot', 'Less shot', 'More ice', 'Less ice', 'Extra sugar']
+    } else if (lowerName.includes('mocha') || lowerName.includes('choc')) {
+      return ['More choc', 'Less choc', 'More milk', 'Less milk', 'More ice', 'Less ice']
+    }
+    return []
+  }
+
   const handleSubmit = () => {
-    const items = (Object.entries(selectedCoffees) as Array<[string, { hot: number; iced: number }]>).reduce<Array<{ name: string; isUrgent: boolean; temperature: 'hot' | 'iced' }>>((acc, [name, temps]) => {
+    const items = (Object.entries(selectedCoffees) as Array<[string, { hot: number; iced: number }]>).reduce<Array<{ name: string; isUrgent: boolean; temperature: 'hot' | 'iced'; remark?: string }>>((acc, [name, temps]) => {
       const isUrgent = urgentTypes.has(name)
-      for (let i = 0; i < temps.hot; i++) acc.push({ name, isUrgent, temperature: 'hot' })
-      for (let i = 0; i < temps.iced; i++) acc.push({ name, isUrgent, temperature: 'iced' })
+      const remarks = itemRemarks[name] || { hot: '', iced: '' }
+      
+      for (let i = 0; i < temps.hot; i++) {
+        acc.push({ 
+          name, 
+          isUrgent, 
+          temperature: 'hot',
+          remark: remarks.hot.trim() || undefined
+        })
+      }
+      for (let i = 0; i < temps.iced; i++) {
+        acc.push({ 
+          name, 
+          isUrgent, 
+          temperature: 'iced',
+          remark: remarks.iced.trim() || undefined
+        })
+      }
       return acc
     }, [])
 
@@ -99,7 +167,7 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
     }
 
     if (isEditMode && onUpdateOrder && existingOrder) {
-      const updateItems: UpdateOrderRequest['items'] = items.map(i => ({ name: i.name, temperature: i.temperature, isUrgent: i.isUrgent }))
+      const updateItems: UpdateOrderRequest['items'] = items.map(i => ({ name: i.name, temperature: i.temperature, isUrgent: i.isUrgent, remark: i.remark }))
       onUpdateOrder({ orderId: existingOrder.id, items: updateItems, remark })
     } else {
       // If no table selected, require a customer name for priority orders
@@ -145,7 +213,7 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
             className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[70px]"
           />
           <div className="flex flex-wrap gap-2 mt-2 text-xs">
-            {['Extra sugar', 'Less ice', 'No sugar', 'Oat milk', 'Decaf'].map((preset) => (
+            {['Extra sugar', 'Extra shot', 'Less ice', 'Less milk'].map((preset) => (
               <button
                 key={preset}
                 type="button"
@@ -223,6 +291,65 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                     </div>
                   </div>
                 </div>
+                
+                {/* Individual Remarks Section - only show if drink has quantity or available quick remarks */}
+                {(hasSelection || getQuickRemarks(coffee).length > 0) && (
+                  <div className="mt-3 space-y-2">
+                    {quantities.hot > 0 && (
+                      <div className="bg-gray-800/30 p-2 rounded">
+                        <label className="block text-xs text-orange-300 mb-1">Hot Remark</label>
+                        <textarea
+                          value={itemRemarks[coffee]?.hot || ''}
+                          onChange={(e) => updateItemRemark(coffee, 'hot', e.target.value)}
+                          placeholder="Notes for hot version..."
+                          className="w-full px-2 py-1 text-xs rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-orange-500"
+                          rows={1}
+                        />
+                        {getQuickRemarks(coffee).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {getQuickRemarks(coffee).map((quickRemark) => (
+                              <button
+                                key={`${coffee}-hot-${quickRemark}`}
+                                type="button"
+                                onClick={() => addQuickRemarkToItem(coffee, 'hot', quickRemark)}
+                                className="px-1.5 py-0.5 text-xs rounded bg-orange-800 hover:bg-orange-700 text-orange-200"
+                              >
+                                + {quickRemark}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {quantities.iced > 0 && coffeeItem.iced && (
+                      <div className="bg-gray-800/30 p-2 rounded">
+                        <label className="block text-xs text-blue-300 mb-1">Iced Remark</label>
+                        <textarea
+                          value={itemRemarks[coffee]?.iced || ''}
+                          onChange={(e) => updateItemRemark(coffee, 'iced', e.target.value)}
+                          placeholder="Notes for iced version..."
+                          className="w-full px-2 py-1 text-xs rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          rows={1}
+                        />
+                        {getQuickRemarks(coffee).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {getQuickRemarks(coffee).map((quickRemark) => (
+                              <button
+                                key={`${coffee}-iced-${quickRemark}`}
+                                type="button"
+                                onClick={() => addQuickRemarkToItem(coffee, 'iced', quickRemark)}
+                                className="px-1.5 py-0.5 text-xs rounded bg-blue-800 hover:bg-blue-700 text-blue-200"
+                              >
+                                + {quickRemark}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )
           })}

@@ -35,6 +35,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
       orderId: string
       originalIndex: number
       isUrgent: boolean
+      remark?: string
     }>
   }>>(() => {
     const groups: Record<string, {
@@ -45,6 +46,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         orderId: string
         originalIndex: number
         isUrgent: boolean
+        remark?: string
       }>
     }> = {}
     
@@ -62,6 +64,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         orderId: item.orderId,
         originalIndex: item.originalIndex,
         isUrgent: item.isUrgent,
+        remark: item.remark,
       })
     })
     return Object.values(groups)
@@ -93,49 +96,52 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         </div>
       </div>
       <ul className="mt-3 space-y-2 flex-grow">
-        {groupedItems.map((group: { name: string; temperature: 'hot' | 'iced'; details: Array<{ status: 'preparing' | 'ready'; orderId: string; originalIndex: number; isUrgent: boolean }> }) => {
+        {groupedItems.map((group: { name: string; temperature: 'hot' | 'iced'; details: Array<{ status: 'preparing' | 'ready'; orderId: string; originalIndex: number; isUrgent: boolean; remark?: string }> }) => {
           const allInGroupReady = group.details.every(d => d.status === 'ready')
+          const hasRemarks = group.details.some(d => d.remark)
+          
           return (
-            <li key={`${group.name}-${group.temperature}`} className="flex justify-between items-center">
-              <span className={`transition-colors flex items-center gap-1.5 ${allInGroupReady ? 'text-gray-500 line-through' : 'text-gray-300'}`}>
-                {group.details.some(d => d.isUrgent) && <ZapIcon className="w-4 h-4 text-red-400" />}
-                {group.name}
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${group.temperature === 'iced' ? 'bg-blue-800 text-blue-300' : 'bg-orange-800 text-orange-300'}`}>
-          {group.temperature === 'iced' ? 'Iced' : 'Hot'}
+            <li key={`${group.name}-${group.temperature}`} className="flex flex-col gap-1">
+              <div className="flex justify-between items-center">
+                <span className={`transition-colors flex items-center gap-1.5 ${allInGroupReady ? 'text-gray-500 line-through' : 'text-gray-300'}`}>
+                  {group.details.some(d => d.isUrgent) && <ZapIcon className="w-4 h-4 text-red-400" />}
+                  {group.name}
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${group.temperature === 'iced' ? 'bg-blue-800 text-blue-300' : 'bg-orange-800 text-orange-300'}`}>
+            {group.temperature === 'iced' ? 'Iced' : 'Hot'}
+                  </span>
+                  <span className="text-gray-400 text-sm">x{group.details.length}</span>
                 </span>
-                <span className="text-gray-400 text-sm">x{group.details.length}</span>
-              </span>
-              
-              {onUpdateItemStatus && (
-                group.details.length > 4 ? (
-                  <div className="flex flex-col gap-1">
-                    <div className="flex gap-1.5">
-                      {group.details.slice(0, 4).map((detail, index: number) => (
-                        <button
-                          key={index}
-                          onClick={() => onUpdateItemStatus(detail.orderId, detail.originalIndex)}
-                          className={`p-1 rounded-full transition-colors relative ${detail.status === 'ready' ? 'bg-green-500 text-white' : 'bg-gray-600 hover:bg-blue-600 text-gray-400'}`}
-                        >
-                          {detail.isUrgent && detail.status === 'preparing' && <ZapIcon className="w-3 h-3 absolute -top-1 -right-1 text-red-400 fill-current" />}
-                          <CheckCircleIcon className="w-4 h-4" />
-                        </button>
-                      ))}
+                
+                {onUpdateItemStatus && (
+                  group.details.length > 4 ? (
+                    <div className="flex flex-col gap-1">
+                      <div className="flex gap-1.5">
+                        {group.details.slice(0, 4).map((detail, index: number) => (
+                          <button
+                            key={index}
+                            onClick={() => onUpdateItemStatus(detail.orderId, detail.originalIndex)}
+                            className={`p-1 rounded-full transition-colors relative ${detail.status === 'ready' ? 'bg-green-500 text-white' : 'bg-gray-600 hover:bg-blue-600 text-gray-400'}`}
+                          >
+                            {detail.isUrgent && detail.status === 'preparing' && <ZapIcon className="w-3 h-3 absolute -top-1 -right-1 text-red-400 fill-current" />}
+                            <CheckCircleIcon className="w-4 h-4" />
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-1.5">
+                        {group.details.slice(4).map((detail, index: number) => (
+                          <button
+                            key={index + 4}
+                            onClick={() => onUpdateItemStatus(detail.orderId, detail.originalIndex)}
+                            className={`p-1 rounded-full transition-colors relative ${detail.status === 'ready' ? 'bg-green-500 text-white' : 'bg-gray-600 hover:bg-blue-600 text-gray-400'}`}
+                          >
+                            {detail.isUrgent && detail.status === 'preparing' && <ZapIcon className="w-3 h-3 absolute -top-1 -right-1 text-red-400 fill-current" />}
+                            <CheckCircleIcon className="w-4 h-4" />
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex gap-1.5">
-                      {group.details.slice(4).map((detail, index: number) => (
-                        <button
-                          key={index + 4}
-                          onClick={() => onUpdateItemStatus(detail.orderId, detail.originalIndex)}
-                          className={`p-1 rounded-full transition-colors relative ${detail.status === 'ready' ? 'bg-green-500 text-white' : 'bg-gray-600 hover:bg-blue-600 text-gray-400'}`}
-                        >
-                          {detail.isUrgent && detail.status === 'preparing' && <ZapIcon className="w-3 h-3 absolute -top-1 -right-1 text-red-400 fill-current" />}
-                          <CheckCircleIcon className="w-4 h-4" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-nowrap gap-1.5">
+                  ) : (
+                    <div className="flex flex-nowrap gap-1.5">
                     {group.details.map((detail, index: number) => (
                       <button
                         key={index}
@@ -148,6 +154,18 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                     ))}
                   </div>
                 )
+              )}
+              </div>
+              
+              {/* Display individual item remarks */}
+              {hasRemarks && (
+                <div className="text-xs text-gray-400 mt-1 pl-6">
+                  {group.details.filter(d => d.remark).map((detail, index) => (
+                    <div key={index} className="text-yellow-300">
+                      Item {index + 1}: {detail.remark}
+                    </div>
+                  ))}
+                </div>
               )}
             </li>
           )
