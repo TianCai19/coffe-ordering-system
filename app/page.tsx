@@ -8,7 +8,7 @@ import { OrderModal } from '@/components/OrderModal'
 import { Statistics } from '@/components/Statistics'
 import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
 import { LogsModal } from '@/components/LogsModal'
-import { CoffeeCupIcon, DownloadIcon, HistoryIcon, ArchiveIcon } from '@/components/Icons'
+import { CoffeeCupIcon, DownloadIcon, HistoryIcon, ArchiveIcon, SunIcon, MoonIcon } from '@/components/Icons'
 
 const TABLE_COUNT = 24
 
@@ -23,6 +23,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [showLogsModal, setShowLogsModal] = useState(false)
   const [archiving, setArchiving] = useState(false)
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
   // Fast local stats calculator to avoid extra round-trips
   const computeStats = (src: Order[]): OrderStats => {
@@ -71,6 +72,48 @@ export default function HomePage() {
     const interval = setInterval(loadData, 10000)
     return () => clearInterval(interval)
   }, [])
+
+  // Theme management
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('coffee-theme') as 'dark' | 'light' | null
+    if (savedTheme) {
+      setTheme(savedTheme)
+    }
+  }, [])
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(newTheme)
+    localStorage.setItem('coffee-theme', newTheme)
+  }
+
+  // Theme-aware CSS classes
+  const getThemeClasses = () => {
+    return {
+      // Main backgrounds
+      mainBg: theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900',
+      headerBg: theme === 'dark' ? 'bg-gray-800/80 border-gray-700' : 'bg-white/80 border-gray-200',
+      cardBg: theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200',
+      sectionBg: theme === 'dark' ? 'bg-gray-800' : 'bg-white',
+      
+      // Buttons
+      primaryBtn: theme === 'dark' ? 'bg-gray-700 hover:bg-blue-600 text-white' : 'bg-gray-100 hover:bg-blue-500 hover:text-white text-gray-900',
+      secondaryBtn: theme === 'dark' ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900',
+      dangerBtn: theme === 'dark' ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white',
+      
+      // Table buttons
+      tableBtn: theme === 'dark' ? 'bg-gray-700 hover:bg-blue-600' : 'bg-gray-100 hover:bg-blue-500 border border-gray-300',
+      
+      // Text colors
+      headingText: theme === 'dark' ? 'text-white' : 'text-gray-900',
+      bodyText: theme === 'dark' ? 'text-gray-300' : 'text-gray-600',
+      mutedText: theme === 'dark' ? 'text-gray-400' : 'text-gray-500',
+      
+      // Borders
+      border: theme === 'dark' ? 'border-gray-700' : 'border-gray-200',
+      borderStrong: theme === 'dark' ? 'border-gray-600' : 'border-gray-300'
+    }
+  }
 
   // Place order
   const handlePlaceOrder = async ({ tableNumber, customerName, remark, items }: { tableNumber?: number; customerName?: string; remark?: string; items: CreateOrderRequest['items'] }) => {
@@ -305,10 +348,11 @@ export default function HomePage() {
   }, [orders, sortBy])
 
   const totalPendingItems = (Object.values(statistics.coffeeCounts) as number[]).reduce((sum, count) => sum + count, 0)
+  const themeClasses = getThemeClasses()
 
   if (loading) {
     return (
-      <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+      <div className={`${themeClasses.mainBg} min-h-screen flex items-center justify-center`}>
         <div className="text-center">
           <CoffeeCupIcon className="w-16 h-16 mx-auto mb-4 animate-pulse" />
           <p className="text-xl">Loading...</p>
@@ -318,12 +362,12 @@ export default function HomePage() {
   }
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen font-sans">
-      <header className="bg-gray-800/80 backdrop-blur-sm p-4 border-b border-gray-700 sticky top-0 z-10 flex justify-between items-center">
+    <div className={`${themeClasses.mainBg} min-h-screen font-sans`}>
+      <header className={`${themeClasses.headerBg} backdrop-blur-sm p-4 border-b ${themeClasses.border} sticky top-0 z-10 flex justify-between items-center`}>
         <div className="flex gap-2">
           <button 
             onClick={() => setShowLogsModal(true)} 
-            className="p-2 rounded-md bg-gray-700 hover:bg-blue-600 text-white transition-colors" 
+            className={`p-2 rounded-md ${themeClasses.primaryBtn} transition-colors`}
             title="View history"
           >
             <HistoryIcon className="w-6 h-6"/>
@@ -331,37 +375,46 @@ export default function HomePage() {
           <button 
             onClick={handleArchiveData}
             disabled={archiving || orders.length === 0}
-            className="p-2 rounded-md bg-gray-700 hover:bg-orange-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+            className={`p-2 rounded-md ${themeClasses.primaryBtn} transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
             title={archiving ? "Archiving..." : "Archive this week"}
           >
             <ArchiveIcon className="w-6 h-6"/>
           </button>
         </div>
-        <h1 className="text-3xl font-bold text-center flex items-center justify-center gap-3">
+        <h1 className={`text-3xl font-bold text-center flex items-center justify-center gap-3 ${themeClasses.headingText}`}>
           <CoffeeCupIcon className="w-8 h-8"/>
           Coffee Order Manager
         </h1>
-        <button 
-          onClick={handleExportData} 
-          className="p-2 rounded-md bg-gray-700 hover:bg-green-600 text-white transition-colors" 
-          title="Export data"
-        >
-          <DownloadIcon className="w-6 h-6"/>
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={toggleTheme}
+            className={`p-2 rounded-md ${themeClasses.primaryBtn} transition-colors`}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+          >
+            {theme === 'dark' ? <SunIcon className="w-6 h-6"/> : <MoonIcon className="w-6 h-6"/>}
+          </button>
+          <button 
+            onClick={handleExportData} 
+            className={`p-2 rounded-md ${themeClasses.primaryBtn} transition-colors`}
+            title="Export data"
+          >
+            <DownloadIcon className="w-6 h-6"/>
+          </button>
+        </div>
       </header>
 
       <main className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8">
         {/* Left Side: Tables & Statistics */}
         <div className="lg:col-span-1 space-y-8">
           <section>
-            <Statistics stats={statistics} />
+            <Statistics stats={statistics} theme={theme} />
           </section>
           <section>
-            <h2 className="text-2xl font-semibold mb-4 pb-2 border-b-2 border-gray-700">Select a table to order</h2>
+            <h2 className={`text-2xl font-semibold mb-4 pb-2 border-b-2 ${themeClasses.border} ${themeClasses.headingText}`}>Select a table to order</h2>
             <div className="mb-4">
               <button
                 onClick={() => { setSelectedTable(null); setShowOrderModal(true) }}
-                className="w-full px-3 py-2 rounded-md bg-red-700 hover:bg-red-600 text-white transition-colors"
+                className={`w-full px-3 py-2 rounded-md ${themeClasses.dangerBtn} transition-colors`}
                 title="Create a name-only priority order"
               >
                 Priority order (name only)
@@ -372,7 +425,7 @@ export default function HomePage() {
                 <button
                   key={tableNum}
                   onClick={() => { setSelectedTable(tableNum); setShowOrderModal(true) }}
-                  className="aspect-square flex items-center justify-center text-xl font-bold rounded-lg bg-gray-700 hover:bg-blue-600 hover:scale-105 transition-all duration-200 shadow-md"
+                  className={`aspect-square flex items-center justify-center text-xl font-bold rounded-lg ${themeClasses.tableBtn} hover:scale-105 transition-all duration-200 shadow-md`}
                 >
                   {tableNum}
                 </button>
@@ -384,25 +437,25 @@ export default function HomePage() {
         {/* Right Side: Order Queue */}
         <section className="lg:col-span-2">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold pb-2 border-b-2 border-gray-700 flex-grow">
+            <h2 className={`text-2xl font-semibold pb-2 border-b-2 ${themeClasses.border} flex-grow ${themeClasses.headingText}`}>
               Preparing Queue ({totalPendingItems} pending)
             </h2>
             <div className="flex gap-2">
               <button 
                 onClick={() => setSortBy('table')} 
-                className={`px-3 py-1 text-sm rounded-md ${sortBy === 'table' ? 'bg-blue-600 text-white' : 'bg-gray-700'}`}
+                className={`px-3 py-1 text-sm rounded-md ${sortBy === 'table' ? 'bg-blue-600 text-white' : themeClasses.primaryBtn}`}
               >
                 By table
               </button>
               <button 
                 onClick={() => setSortBy('table-desc')} 
-                className={`px-3 py-1 text-sm rounded-md ${sortBy === 'table-desc' ? 'bg-blue-600 text-white' : 'bg-gray-700'}`}
+                className={`px-3 py-1 text-sm rounded-md ${sortBy === 'table-desc' ? 'bg-blue-600 text-white' : themeClasses.primaryBtn}`}
               >
                 By table (desc)
               </button>
               <button 
                 onClick={() => setSortBy('time')} 
-                className={`px-3 py-1 text-sm rounded-md ${sortBy === 'time' ? 'bg-blue-600 text-white' : 'bg-gray-700'}`}
+                className={`px-3 py-1 text-sm rounded-md ${sortBy === 'time' ? 'bg-blue-600 text-white' : themeClasses.primaryBtn}`}
               >
                 By time
               </button>
@@ -415,6 +468,7 @@ export default function HomePage() {
                 <OrderCard 
                   key={order.id || order.tableNumber} 
                   order={order} 
+                  theme={theme}
                   onUpdateItemStatus={handleUpdateItemStatus}
                   onEdit={setEditingOrder}
                   onDelete={setDeletingOrderId}
@@ -422,23 +476,23 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 px-6 bg-gray-800 rounded-lg">
-              <p className="text-gray-400">No orders are pending.</p>
+            <div className={`text-center py-16 px-6 ${themeClasses.sectionBg} ${themeClasses.border} border rounded-lg`}>
+              <p className={themeClasses.mutedText}>No orders are pending.</p>
             </div>
           )}
           
-          <h2 className="text-2xl font-semibold mt-12 mb-4 pb-2 border-b-2 border-gray-700">
+          <h2 className={`text-2xl font-semibold mt-12 mb-4 pb-2 border-b-2 ${themeClasses.border} ${themeClasses.headingText}`}>
             Completed ({readyOrders.length})
           </h2>
           {readyOrders.length > 0 ? (
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
               {readyOrders.map(order => (
-                <OrderCard key={order.id} order={order} onUpdateItemStatus={handleUpdateItemStatus} />
+                <OrderCard key={order.id} order={order} theme={theme} onUpdateItemStatus={handleUpdateItemStatus} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 px-6 bg-gray-800 rounded-lg">
-              <p className="text-gray-400">No completed orders yet.</p>
+            <div className={`text-center py-16 px-6 ${themeClasses.sectionBg} ${themeClasses.border} border rounded-lg`}>
+              <p className={themeClasses.mutedText}>No completed orders yet.</p>
             </div>
           )}
         </section>
@@ -447,6 +501,7 @@ export default function HomePage() {
     {(showOrderModal || editingOrder) && (
         <OrderModal
           tableNumber={selectedTable}
+          theme={theme}
           existingOrder={editingOrder}
       onClose={() => { setSelectedTable(null); setEditingOrder(null); setShowOrderModal(false) }}
           onPlaceOrder={handlePlaceOrder}
@@ -456,13 +511,14 @@ export default function HomePage() {
 
       {deletingOrderId && (
         <ConfirmDeleteModal
+          theme={theme}
           onConfirm={handleDeleteOrder}
           onCancel={() => setDeletingOrderId(null)}
         />
       )}
 
       {showLogsModal && (
-  <LogsModal onClose={() => setShowLogsModal(false)} />
+  <LogsModal theme={theme} onClose={() => setShowLogsModal(false)} />
       )}
     </div>
   )
