@@ -221,10 +221,16 @@ export default function HomePage() {
       return
     }
 
+    // Prompt for password
+    const password = prompt('Please enter the archive password:')
+    if (!password) {
+      return
+    }
+
     setArchiving(true)
     try {
   console.log('Archiving data...')
-      const result = await ApiService.archiveCurrentData()
+      const result = await ApiService.archiveCurrentData(password)
   console.log('Archive done:', result)
       
   // Reload (should be empty)
@@ -233,7 +239,11 @@ export default function HomePage() {
   alert(`Archived successfully!\n\nSaved ${result.archive?.totalOrders || 0} orders to history.`)
     } catch (error) {
   console.error('Archive failed:', error)
-  alert('Failed to archive. Please try again.')
+      if (error instanceof Error && error.message === 'Invalid password') {
+        alert('Invalid password. Archive cancelled.')
+      } else {
+        alert('Failed to archive. Please try again.')
+      }
     } finally {
       setArchiving(false)
     }
