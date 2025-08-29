@@ -128,8 +128,8 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
-      <div className="bg-gray-800 rounded-xl p-8 w-full max-w-3xl m-4 shadow-2xl border border-gray-700 h-[90vh] flex flex-col min-h-0">
-        <h2 className="text-3xl font-bold text-white mb-6">
+      <div className="bg-gray-800 rounded-xl p-4 sm:p-8 w-full max-w-3xl m-4 shadow-2xl border border-gray-700 h-[90vh] flex flex-col min-h-0">
+        <h2 className="text-3xl font-bold text-white mb-4 sm:mb-6">
           {isEditMode 
             ? `Edit order for ${existingOrder?.customerName ? `Customer ${existingOrder?.customerName}` : `Table ${currentTableNumber}`}`
             : currentTableNumber 
@@ -137,7 +137,7 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
               : 'Priority Order (Name Only)'}
         </h2>
         {/* Scrollable content */}
-        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-2 pb-24">
+  <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-2 pb-24">
           {!currentTableNumber && (
             <div className="mb-4">
               <label className="block text-sm text-gray-300 mb-1">Customer Name</label>
@@ -171,15 +171,15 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
               ))}
             </div>
           </div>
-          <div className="space-y-3 mb-6">
+          <div className="space-y-2 mb-4">
             {menu.map(coffeeItem => {
             const coffee = coffeeItem.name
             const quantities = (selectedCoffees as Record<string, { hot: number; iced: number }>)[coffee] || { hot: 0, iced: 0 }
             const isUrgent = urgentTypes.has(coffee)
             const hasSelection = quantities.hot > 0 || quantities.iced > 0
-            return (
-              <div key={coffee} className={`p-4 rounded-lg transition-colors ${isUrgent ? 'bg-red-900/50' : 'bg-gray-700'}`}>
-                <div className="flex justify-between items-center">
+              return (
+                <div key={coffee} className={`p-3 sm:p-4 rounded-lg transition-colors ${isUrgent ? 'bg-red-900/50' : 'bg-gray-700'}`}>
+                  <div className="flex justify-between items-center">
                   <span className={`font-medium text-lg ${isUrgent ? 'text-red-300' : 'text-gray-200'}`}>{coffee}</span>
                   <button 
                     onClick={() => toggleUrgent(coffee)} 
@@ -189,16 +189,11 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                     <ZapIcon className="w-5 h-5"/>
                   </button>
                 </div>
-                {/* Temperature labels at the top */}
-                <div className="mt-3 mb-2 grid grid-cols-2 gap-4 text-center">
-                  <div className="font-semibold text-orange-300">Hot</div>
-                  <div className="font-semibold text-blue-300">Iced</div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
+                   <div className="mt-2 grid grid-cols-2 gap-3">
                   {/* Hot Controls */}
-                  <div className="flex items-center justify-center bg-orange-900/20 p-3 rounded-md border border-orange-800/30">
-                    <div className="flex items-center gap-2">
+                     <div className="relative flex items-center justify-center bg-orange-900/20 p-2 pt-6 sm:p-3 sm:pt-6 rounded-md border border-orange-800/30">
+                       <span className="pointer-events-none absolute top-1 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-orange-300">Hot</span>
+                       <div className="flex items-center gap-2">
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'hot', -1)} 
                         className="w-12 h-12 rounded-full bg-gray-600 hover:bg-red-600 text-white font-bold text-lg transition-colors"
@@ -217,8 +212,9 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                     </div>
                   </div>
                   {/* Iced Controls */}
-                  <div className="flex items-center justify-center bg-blue-900/20 p-3 rounded-md border border-blue-800/30">
-                    <div className="flex items-center gap-2">
+                     <div className="relative flex items-center justify-center bg-blue-900/20 p-2 pt-6 sm:p-3 sm:pt-6 rounded-md border border-blue-800/30">
+                       <span className="pointer-events-none absolute top-1 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-blue-300">Iced</span>
+                       <div className="flex items-center gap-2">
                       <button 
                         onClick={() => handleQuantityChange(coffee, 'iced', -1)} 
                         className="w-12 h-12 rounded-full bg-gray-600 hover:bg-red-600 text-white font-bold text-lg transition-colors disabled:opacity-50"
@@ -243,7 +239,7 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
           </div>
         </div>
         {/* Sticky footer actions with safe-area padding */}
-        <div className="sticky bottom-0 -mx-8 px-8 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)] bg-gray-800/95 backdrop-blur border-t border-gray-700">
+        <div className="sticky bottom-0 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)] bg-gray-800/95 backdrop-blur border-t border-gray-700">
           <div className="flex justify-between gap-4">
             <button 
               onClick={onClose} 
