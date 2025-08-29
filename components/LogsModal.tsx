@@ -26,6 +26,20 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
     loadArchives()
   }, [])
 
+  // Lock background scroll when modal is open
+  useEffect(() => {
+    const html = document.documentElement
+    const body = document.body
+    const prevHtmlOverflow = html.style.overflow
+    const prevBodyOverflow = body.style.overflow
+    html.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
+    return () => {
+      html.style.overflow = prevHtmlOverflow
+      body.style.overflow = prevBodyOverflow
+    }
+  }, [])
+
   const loadArchives = async () => {
     try {
       const data = await ApiService.getArchives()
@@ -81,8 +95,8 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
-      <div className="bg-gray-800 rounded-xl p-8 w-full max-w-6xl m-4 shadow-2xl border border-gray-700 max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 overscroll-contain">
+      <div className="bg-gray-800 rounded-xl p-8 w-full max-w-6xl m-4 shadow-2xl border border-gray-700 h-[90vh] overflow-hidden flex flex-col min-h-0">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-white flex items-center gap-3">
             <CoffeeCupIcon className="w-8 h-8"/>
@@ -102,9 +116,9 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
             <p className="text-gray-500 mt-2">After the first archive, history will appear here.</p>
           </div>
         ) : (
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
             {!selectedArchive ? (
-              <div className="h-full overflow-y-auto">
+              <div className="h-full overflow-y-auto custom-scrollbar overscroll-contain">
                 <div className="grid gap-4">
                   {archives.map((archive) => (
                     <div 
@@ -141,7 +155,7 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
                 </div>
               </div>
             ) : (
-              <div className="h-full overflow-y-auto">
+              <div className="h-full overflow-y-auto custom-scrollbar overscroll-contain">
                 <div className="mb-4">
                   <button
                     onClick={() => setSelectedArchive(null)}
