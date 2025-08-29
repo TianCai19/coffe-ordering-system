@@ -168,10 +168,10 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
                     </button>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-8">
-                    <div>
+                  <div className="grid md:grid-cols-2 gap-8 min-h-0">
+                    <div className="min-h-0">
                       <h4 className="text-lg font-semibold text-white mb-4">Coffee types</h4>
-                      <div className="space-y-2">
+                      <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
                         {Object.entries(selectedArchive.coffeeCounts)
                           .sort((a, b) => b[1] - a[1])
                           .map(([name, count]) => (
@@ -183,9 +183,9 @@ export const LogsModal: React.FC<LogsModalProps> = ({ onClose }) => {
                       </div>
                     </div>
 
-                    <div>
+                    <div className="min-h-0">
                       <h4 className="text-lg font-semibold text-white mb-4">By table</h4>
-                      <div className="space-y-2">
+                      <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
                         {Object.entries(selectedArchive.tableCounts)
                           .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
                           .map(([tableNumber, count]) => (
