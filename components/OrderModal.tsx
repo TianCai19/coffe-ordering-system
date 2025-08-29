@@ -20,6 +20,18 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
   const [customerName, setCustomerName] = useState<string>(existingOrder?.customerName || '')
   const [remark, setRemark] = useState<string>(existingOrder?.remark || '')
   
+  // Lock background scroll while modal is open
+  useEffect(() => {
+    const prevHtmlOverflow = document.documentElement.style.overflow
+    const prevBodyOverflow = document.body.style.overflow
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.documentElement.style.overflow = prevHtmlOverflow
+      document.body.style.overflow = prevBodyOverflow
+    }
+  }, [])
+  
   const [selectedCoffees, setSelectedCoffees] = useState<Record<string, { hot: number; iced: number }>>(() => {
     if (!isEditMode || !existingOrder) return {}
     const initial: Record<string, { hot: number; iced: number }> = {}
@@ -116,7 +128,7 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
-      <div className="bg-gray-800 rounded-xl p-8 w-full max-w-3xl m-4 shadow-2xl border border-gray-700">
+      <div className="bg-gray-800 rounded-xl p-8 w-full max-w-3xl m-4 shadow-2xl border border-gray-700 h-[90vh] flex flex-col min-h-0">
         <h2 className="text-3xl font-bold text-white mb-6">
           {isEditMode 
             ? `Edit order for ${existingOrder?.customerName ? `Customer ${existingOrder?.customerName}` : `Table ${currentTableNumber}`}`
@@ -124,41 +136,43 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
               ? `Table ${currentTableNumber} - Order`
               : 'Priority Order (Name Only)'}
         </h2>
-        {!currentTableNumber && (
+        {/* Scrollable content */}
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-2 pb-24">
+          {!currentTableNumber && (
+            <div className="mb-4">
+              <label className="block text-sm text-gray-300 mb-1">Customer Name</label>
+              <input 
+                value={customerName} 
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerName(e.target.value)}
+                placeholder="Enter name"
+                className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
+          {/* Remark */}
           <div className="mb-4">
-            <label className="block text-sm text-gray-300 mb-1">Customer Name</label>
-            <input 
-              value={customerName} 
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerName(e.target.value)}
-              placeholder="Enter name"
-              className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <label className="block text-sm text-gray-300 mb-1">Remark</label>
+            <textarea
+              value={remark}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRemark(e.target.value)}
+              placeholder="Add any special notes (e.g., extra sugar, less ice)"
+              className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[70px]"
             />
+            <div className="flex flex-wrap gap-2 mt-2 text-xs">
+              {['Extra sugar', 'Less ice', 'No sugar', 'Oat milk', 'Decaf'].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setRemark(r => r ? `${r} | ${preset}` : preset)}
+                  className="px-2 py-1 rounded bg-gray-600 hover:bg-gray-500 text-white"
+                >
+                  + {preset}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
-        {/* Remark */}
-        <div className="mb-4">
-          <label className="block text-sm text-gray-300 mb-1">Remark</label>
-          <textarea
-            value={remark}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRemark(e.target.value)}
-            placeholder="Add any special notes (e.g., extra sugar, less ice)"
-            className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[70px]"
-          />
-          <div className="flex flex-wrap gap-2 mt-2 text-xs">
-            {['Extra sugar', 'Less ice', 'No sugar', 'Oat milk', 'Decaf'].map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => setRemark(r => r ? `${r} | ${preset}` : preset)}
-                className="px-2 py-1 rounded bg-gray-600 hover:bg-gray-500 text-white"
-              >
-                + {preset}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="space-y-3 mb-6 max-h-[60vh] overflow-y-auto pr-2">
-          {menu.map(coffeeItem => {
+          <div className="space-y-3 mb-6">
+            {menu.map(coffeeItem => {
             const coffee = coffeeItem.name
             const quantities = (selectedCoffees as Record<string, { hot: number; iced: number }>)[coffee] || { hot: 0, iced: 0 }
             const isUrgent = urgentTypes.has(coffee)
@@ -225,22 +239,26 @@ export const OrderModal: React.FC<OrderModalProps> = (props: OrderModalProps) =>
                 </div>
               </div>
             )
-          })}
+            })}
+          </div>
         </div>
-        <div className="flex justify-between gap-4">
-          <button 
-            onClick={onClose} 
-            className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleSubmit} 
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:bg-gray-500" 
-            disabled={totalItems === 0}
-          >
-            {isEditMode ? 'Update Order' : `Place Order (${totalItems})`}
-          </button>
+        {/* Sticky footer actions with safe-area padding */}
+        <div className="sticky bottom-0 -mx-8 px-8 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)] bg-gray-800/95 backdrop-blur border-t border-gray-700">
+          <div className="flex justify-between gap-4">
+            <button 
+              onClick={onClose} 
+              className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleSubmit} 
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:bg-gray-500" 
+              disabled={totalItems === 0}
+            >
+              {isEditMode ? 'Update Order' : `Place Order (${totalItems})`}
+            </button>
+          </div>
         </div>
       </div>
     </div>
