@@ -54,6 +54,7 @@ UPSTASH_REDIS_REST_TOKEN=your_very_long_token_string
 
 # 应用配置
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_TABLE_COUNT=24
 ```
 
 > **重要提示**：
@@ -159,6 +160,7 @@ git push origin main
 | `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` | Production |
 | `NEXT_PUBLIC_APP_URL` | `https://your-app-preview.vercel.app` | Preview |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Development |
+| `NEXT_PUBLIC_TABLE_COUNT` | `24` | Production, Preview, Development |
 
 #### 4. 部署
 
