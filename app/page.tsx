@@ -10,7 +10,7 @@ import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
 import { LogsModal } from '@/components/LogsModal'
 import { CoffeeCupIcon, DownloadIcon, HistoryIcon, ArchiveIcon } from '@/components/Icons'
 
-const TABLE_COUNT = 24
+const TABLE_COUNT = parseInt(process.env.NEXT_PUBLIC_TABLE_COUNT || '24', 10)
 
 export default function HomePage() {
   const [orders, setOrders] = useState<Order[]>([])
