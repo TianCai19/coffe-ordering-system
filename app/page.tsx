@@ -8,6 +8,7 @@ import { OrderModal } from '@/components/OrderModal'
 import { Statistics } from '@/components/Statistics'
 import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
 import { LogsModal } from '@/components/LogsModal'
+import { ActionLog } from '@/components/ActionLog'
 import { CoffeeCupIcon, DownloadIcon, HistoryIcon, ArchiveIcon } from '@/components/Icons'
 
 const TABLE_COUNT = 24
@@ -23,6 +24,12 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [showLogsModal, setShowLogsModal] = useState(false)
   const [archiving, setArchiving] = useState(false)
+  const [actionLogs, setActionLogs] = useState<string[]>([])
+
+  const addLog = (msg: string) => {
+    const timestamp = new Date().toLocaleTimeString()
+    setActionLogs(prev => [...prev, `${timestamp} - ${msg}`])
+  }
 
   // Fast local stats calculator to avoid extra round-trips
   const computeStats = (src: Order[]): OrderStats => {
@@ -85,6 +92,7 @@ export default function HomePage() {
       })
       setSelectedTable(null)
       setShowOrderModal(false)
+      addLog(`Placed order with ${items.length} item(s)${tableNumber ? ` for table ${tableNumber}` : ''}${customerName ? ` (customer: ${customerName})` : ''}`)
     } catch (error) {
       console.error('Error placing order:', error)
       alert('Failed to place order. Please try again.')
@@ -102,6 +110,7 @@ export default function HomePage() {
       })
       setEditingOrder(null)
       setShowOrderModal(false)
+      addLog(`Updated order${typeof updated.tableNumber === 'number' ? ` for table ${updated.tableNumber}` : updated.customerName ? ` for ${updated.customerName}` : ''}`)
     } catch (error) {
       console.error('Error updating order:', error)
       alert('Failed to update order. Please try again.')
@@ -111,7 +120,8 @@ export default function HomePage() {
   // Delete order
   const handleDeleteOrder = async () => {
     if (!deletingOrderId) return
-    
+    const orderToDelete = orders.find(o => o.id === deletingOrderId)
+
     try {
       await ApiService.deleteOrder(deletingOrderId)
       setOrders(prev => {
@@ -120,6 +130,9 @@ export default function HomePage() {
         return next
       })
       setDeletingOrderId(null)
+      if (orderToDelete) {
+        addLog(`Deleted order${typeof orderToDelete.tableNumber === 'number' ? ` for table ${orderToDelete.tableNumber}` : orderToDelete.customerName ? ` for ${orderToDelete.customerName}` : ''}`)
+      }
     } catch (error) {
       console.error('Error deleting order:', error)
       alert('Failed to delete order. Please try again.')
@@ -128,6 +141,12 @@ export default function HomePage() {
 
   // Toggle single coffee item status
   const handleUpdateItemStatus = async (orderId: string, itemIndex: number) => {
+    const order = orders.find(o => o.id === orderId)
+    const item = order?.items[itemIndex]
+    const newStatus = item?.status === 'preparing' ? 'ready' : 'preparing'
+    if (item) {
+      addLog(`${newStatus === 'ready' ? 'Completed' : 'Reverted'} ${item.name}${typeof order?.tableNumber === 'number' ? ` for table ${order.tableNumber}` : order?.customerName ? ` for ${order.customerName}` : ''}`)
+    }
     // Optimistic toggle
     let reverted = false
     setOrders((prev: Order[]) => {
@@ -150,6 +169,7 @@ export default function HomePage() {
       reverted = true
       await loadData()
       alert('Failed to update status. Refreshed data.')
+      addLog('Failed to update item status and reverted change')
     }
   }
 
@@ -206,6 +226,7 @@ export default function HomePage() {
 
     link.click()
     URL.revokeObjectURL(url)
+    addLog('Exported current data')
   }
 
   // Archive current data and clear
@@ -232,10 +253,11 @@ export default function HomePage() {
   console.log('Archiving data...')
       const result = await ApiService.archiveCurrentData(password)
   console.log('Archive done:', result)
-      
+
   // Reload (should be empty)
       await loadData()
-      
+      addLog('Archived current data')
+
   alert(`Archived successfully!\n\nSaved ${result.archive?.totalOrders || 0} orders to history.`)
     } catch (error) {
   console.error('Archive failed:', error)
@@ -244,6 +266,7 @@ export default function HomePage() {
       } else {
         alert('Failed to archive. Please try again.')
       }
+      addLog('Failed to archive data')
     } finally {
       setArchiving(false)
     }
@@ -464,6 +487,7 @@ export default function HomePage() {
       {showLogsModal && (
   <LogsModal onClose={() => setShowLogsModal(false)} />
       )}
+      <ActionLog logs={actionLogs} />
     </div>
   )
 }
