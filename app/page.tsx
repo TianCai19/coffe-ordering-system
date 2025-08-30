@@ -8,6 +8,7 @@ import { OrderModal } from '@/components/OrderModal'
 import { Statistics } from '@/components/Statistics'
 import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
 import { LogsModal } from '@/components/LogsModal'
+import { ActionLog } from '@/components/ActionLog'
 import { CoffeeCupIcon, DownloadIcon, HistoryIcon, ArchiveIcon } from '@/components/Icons'
 
 const TABLE_COUNT = 24
@@ -23,6 +24,32 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [showLogsModal, setShowLogsModal] = useState(false)
   const [archiving, setArchiving] = useState(false)
+  const [actionLogs, setActionLogs] = useState<string[]>([])
+
+  const addLog = (msg: string) => {
+    const timestamp = new Date().toLocaleTimeString()
+    setActionLogs(prev => [...prev, `${timestamp} - ${msg}`])
+  }
+
+  const handleEditOrder = (order: Order) => {
+    setEditingOrder(order)
+    setShowOrderModal(true)
+    addLog(`Editing order${typeof order.tableNumber === 'number' ? ` for table ${order.tableNumber}` : order.customerName ? ` for ${order.customerName}` : ''}`)
+  }
+
+  const handleRequestDeleteOrder = (orderId: string) => {
+    setDeletingOrderId(orderId)
+    const order = orders.find(o => o.id === orderId)
+    if (order) {
+      addLog(`Requested delete order${typeof order.tableNumber === 'number' ? ` for table ${order.tableNumber}` : order.customerName ? ` for ${order.customerName}` : ''}`)
+    }
+  }
+
+  const handleSortChange = (sort: 'table' | 'table-desc' | 'time') => {
+    setSortBy(sort)
+    const label = sort === 'table' ? 'table' : sort === 'table-desc' ? 'table (desc)' : 'time'
+    addLog(`Sorted by ${label}`)
+  }
 
   // Fast local stats calculator to avoid extra round-trips
   const computeStats = (src: Order[]): OrderStats => {
@@ -85,6 +112,7 @@ export default function HomePage() {
       })
       setSelectedTable(null)
       setShowOrderModal(false)
+      addLog(`Placed order with ${items.length} item(s)${tableNumber ? ` for table ${tableNumber}` : ''}${customerName ? ` (customer: ${customerName})` : ''}`)
     } catch (error) {
       console.error('Error placing order:', error)
       alert('Failed to place order. Please try again.')
@@ -102,6 +130,7 @@ export default function HomePage() {
       })
       setEditingOrder(null)
       setShowOrderModal(false)
+      addLog(`Updated order${typeof updated.tableNumber === 'number' ? ` for table ${updated.tableNumber}` : updated.customerName ? ` for ${updated.customerName}` : ''}`)
     } catch (error) {
       console.error('Error updating order:', error)
       alert('Failed to update order. Please try again.')
@@ -111,7 +140,8 @@ export default function HomePage() {
   // Delete order
   const handleDeleteOrder = async () => {
     if (!deletingOrderId) return
-    
+    const orderToDelete = orders.find(o => o.id === deletingOrderId)
+
     try {
       await ApiService.deleteOrder(deletingOrderId)
       setOrders(prev => {
@@ -120,6 +150,9 @@ export default function HomePage() {
         return next
       })
       setDeletingOrderId(null)
+      if (orderToDelete) {
+        addLog(`Deleted order${typeof orderToDelete.tableNumber === 'number' ? ` for table ${orderToDelete.tableNumber}` : orderToDelete.customerName ? ` for ${orderToDelete.customerName}` : ''}`)
+      }
     } catch (error) {
       console.error('Error deleting order:', error)
       alert('Failed to delete order. Please try again.')
@@ -128,6 +161,12 @@ export default function HomePage() {
 
   // Toggle single coffee item status
   const handleUpdateItemStatus = async (orderId: string, itemIndex: number) => {
+    const order = orders.find(o => o.id === orderId)
+    const item = order?.items[itemIndex]
+    const newStatus = item?.status === 'preparing' ? 'ready' : 'preparing'
+    if (item) {
+      addLog(`${newStatus === 'ready' ? 'Completed' : 'Reverted'} ${item.name}${typeof order?.tableNumber === 'number' ? ` for table ${order.tableNumber}` : order?.customerName ? ` for ${order.customerName}` : ''}`)
+    }
     // Optimistic toggle
     let reverted = false
     setOrders((prev: Order[]) => {
@@ -150,6 +189,7 @@ export default function HomePage() {
       reverted = true
       await loadData()
       alert('Failed to update status. Refreshed data.')
+      addLog('Failed to update item status and reverted change')
     }
   }
 
@@ -206,6 +246,7 @@ export default function HomePage() {
 
     link.click()
     URL.revokeObjectURL(url)
+    addLog('Exported current data')
   }
 
   // Archive current data and clear
@@ -218,12 +259,14 @@ export default function HomePage() {
     const confirmMessage = `Archive this week's data?\n\nThis will:\n1. Save all current orders to History\n2. Clear existing data\n3. Start a new cycle\n\nCurrent orders: ${orders.length}`
     
     if (!confirm(confirmMessage)) {
+      addLog('Cancelled archive prompt')
       return
     }
 
     // Prompt for password
     const password = prompt('Please enter the archive password:')
     if (!password) {
+      addLog('Archive cancelled: no password')
       return
     }
 
@@ -232,10 +275,11 @@ export default function HomePage() {
   console.log('Archiving data...')
       const result = await ApiService.archiveCurrentData(password)
   console.log('Archive done:', result)
-      
+
   // Reload (should be empty)
       await loadData()
-      
+      addLog('Archived current data')
+
   alert(`Archived successfully!\n\nSaved ${result.archive?.totalOrders || 0} orders to history.`)
     } catch (error) {
   console.error('Archive failed:', error)
@@ -244,6 +288,7 @@ export default function HomePage() {
       } else {
         alert('Failed to archive. Please try again.')
       }
+      addLog('Failed to archive data')
     } finally {
       setArchiving(false)
     }
@@ -321,9 +366,9 @@ export default function HomePage() {
     <div className="bg-gray-900 text-white min-h-screen font-sans">
       <header className="bg-gray-800/80 backdrop-blur-sm p-4 border-b border-gray-700 sticky top-0 z-10 flex justify-between items-center">
         <div className="flex gap-2">
-          <button 
-            onClick={() => setShowLogsModal(true)} 
-            className="p-2 rounded-md bg-gray-700 hover:bg-blue-600 text-white transition-colors" 
+          <button
+            onClick={() => { setShowLogsModal(true); addLog('Opened history modal') }}
+            className="p-2 rounded-md bg-gray-700 hover:bg-blue-600 text-white transition-colors"
             title="View history"
           >
             <HistoryIcon className="w-6 h-6"/>
@@ -360,7 +405,7 @@ export default function HomePage() {
             <h2 className="text-2xl font-semibold mb-4 pb-2 border-b-2 border-gray-700">Select a table to order</h2>
             <div className="mb-4">
               <button
-                onClick={() => { setSelectedTable(null); setShowOrderModal(true) }}
+                onClick={() => { setSelectedTable(null); setShowOrderModal(true); addLog('Started priority order') }}
                 className="w-full px-3 py-2 rounded-md bg-red-700 hover:bg-red-600 text-white transition-colors"
                 title="Create a name-only priority order"
               >
@@ -371,7 +416,7 @@ export default function HomePage() {
               {Array.from({ length: TABLE_COUNT }, (_, i) => i + 1).map(tableNum => (
                 <button
                   key={tableNum}
-                  onClick={() => { setSelectedTable(tableNum); setShowOrderModal(true) }}
+                  onClick={() => { setSelectedTable(tableNum); setShowOrderModal(true); addLog(`Started order for table ${tableNum}`) }}
                   className="aspect-square flex items-center justify-center text-xl font-bold rounded-lg bg-gray-700 hover:bg-blue-600 hover:scale-105 transition-all duration-200 shadow-md"
                 >
                   {tableNum}
@@ -388,20 +433,20 @@ export default function HomePage() {
               Preparing Queue ({totalPendingItems} pending)
             </h2>
             <div className="flex gap-2">
-              <button 
-                onClick={() => setSortBy('table')} 
+              <button
+                onClick={() => handleSortChange('table')}
                 className={`px-3 py-1 text-sm rounded-md ${sortBy === 'table' ? 'bg-blue-600 text-white' : 'bg-gray-700'}`}
               >
                 By table
               </button>
-              <button 
-                onClick={() => setSortBy('table-desc')} 
+              <button
+                onClick={() => handleSortChange('table-desc')}
                 className={`px-3 py-1 text-sm rounded-md ${sortBy === 'table-desc' ? 'bg-blue-600 text-white' : 'bg-gray-700'}`}
               >
                 By table (desc)
               </button>
-              <button 
-                onClick={() => setSortBy('time')} 
+              <button
+                onClick={() => handleSortChange('time')}
                 className={`px-3 py-1 text-sm rounded-md ${sortBy === 'time' ? 'bg-blue-600 text-white' : 'bg-gray-700'}`}
               >
                 By time
@@ -412,12 +457,12 @@ export default function HomePage() {
           {preparingOrders.length > 0 ? (
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
               {preparingOrders.map(order => (
-                <OrderCard 
-                  key={order.id || order.tableNumber} 
-                  order={order} 
+                <OrderCard
+                  key={order.id || order.tableNumber}
+                  order={order}
                   onUpdateItemStatus={handleUpdateItemStatus}
-                  onEdit={setEditingOrder}
-                  onDelete={setDeletingOrderId}
+                  onEdit={handleEditOrder}
+                  onDelete={handleRequestDeleteOrder}
                 />
               ))}
             </div>
@@ -448,7 +493,7 @@ export default function HomePage() {
         <OrderModal
           tableNumber={selectedTable}
           existingOrder={editingOrder}
-      onClose={() => { setSelectedTable(null); setEditingOrder(null); setShowOrderModal(false) }}
+      onClose={() => { setSelectedTable(null); setEditingOrder(null); setShowOrderModal(false); addLog('Closed order modal') }}
           onPlaceOrder={handlePlaceOrder}
           onUpdateOrder={handleUpdateOrder}
         />
@@ -457,13 +502,14 @@ export default function HomePage() {
       {deletingOrderId && (
         <ConfirmDeleteModal
           onConfirm={handleDeleteOrder}
-          onCancel={() => setDeletingOrderId(null)}
+          onCancel={() => { setDeletingOrderId(null); addLog('Cancelled delete order') }}
         />
       )}
 
       {showLogsModal && (
-  <LogsModal onClose={() => setShowLogsModal(false)} />
+  <LogsModal onClose={() => { setShowLogsModal(false); addLog('Closed history modal') }} />
       )}
+      <ActionLog logs={actionLogs} />
     </div>
   )
 }
